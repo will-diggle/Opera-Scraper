@@ -106,7 +106,7 @@ def load_jobs():
 PAGE = """
 <!doctype html><meta charset="utf-8"><title>Opera Jobs</title>
 <style>
- :root{--bg:#faf9f7;--ink:#1c1c1c;--line:#d9d5cd;--accent:#7a1f2b;--soft:#6b6b6b}
+ :root{--bg:#f7f8fa;--ink:#1c1c1c;--line:#d3d8e0;--accent:#1b2a4e;--soft:#6b6b6b}
  *{box-sizing:border-box}
  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background:var(--bg);color:var(--ink)}
@@ -126,12 +126,12 @@ PAGE = """
  table{border-collapse:collapse;width:100%;background:#fff;font-size:13.5px}
  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
        vertical-align:top}
- th{background:#f0ede8;position:sticky;top:0;cursor:pointer;white-space:nowrap}
- tr:hover td{background:#fdfbf7}
+ th{background:#e8ecf3;position:sticky;top:0;cursor:pointer;white-space:nowrap}
+ tr:hover td{background:#f4f7fc}
  a{color:var(--accent)}
  .tag{font-size:11px;padding:2px 7px;border-radius:99px;background:#eee;
       white-space:nowrap}
- .Singer{background:#d8ecd8}.Unclear{background:#f2ecd5}
+ .Singer{background:#d6e4f5}.Unclear{background:#eceff4}
  .log{background:#1c1c1c;color:#d6d6d6;font:12px/1.45 ui-monospace,Menlo,monospace;
       padding:12px;border-radius:6px;height:190px;overflow:auto;white-space:pre-wrap}
  .muted{color:var(--soft);font-size:13px}
