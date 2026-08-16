@@ -1,6 +1,15 @@
 # Opera Job Scraper
 
-Four stages. Stage 4 is the one you run every week.
+**Start here — the app:**
+
+```bash
+cd "/Users/willdiggle/Opera Scraper" && .venv/bin/python app.py
+```
+
+Then open <http://localhost:5055> in your browser. Search, filter by country
+and company, and press a button to re-scrape. Ctrl-C in the terminal stops it.
+
+Everything below is the command-line version the app runs for you.
 
 Checks opera company websites for auditions, chorus vacancies, young artist
 programmes and other openings, and puts everything into a filterable spreadsheet.
