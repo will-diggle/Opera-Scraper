@@ -19,6 +19,8 @@ from datetime import datetime
 
 from flask import Flask, jsonify, render_template_string, request
 
+from freshness import assess
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 PY = os.path.join(HERE, ".venv", "bin", "python")
 
@@ -100,6 +102,7 @@ def load_jobs():
     for r in rows:
         m = meta.get(r.get("Company", ""), {})
         r["City"] = m.get("city", "")
+        r["Posted"], r["Freshness"] = assess(r)
     return rows
 
 
@@ -135,6 +138,7 @@ PAGE = """
  .log{background:#1c1c1c;color:#d6d6d6;font:12px/1.45 ui-monospace,Menlo,monospace;
       padding:12px;border-radius:6px;height:190px;overflow:auto;white-space:pre-wrap}
  .muted{color:var(--soft);font-size:13px}
+ .fresh-Outofdate{color:#a33}.fresh-Recent{color:#2a7}.fresh-Upcoming{color:#1b2a4e;font-weight:600}
 </style>
 <header>
   <h1>Opera Jobs</h1>
@@ -164,6 +168,12 @@ PAGE = """
     <option value="Singer" selected>Singer only</option>
     <option value="Unclear">Unclear</option>
   </select>
+  <select id="fresh" onchange="render()">
+    <option value="hideold" selected>Hide out-of-date</option>
+    <option value="">Show everything</option>
+    <option value="Recent">Recent only</option>
+    <option value="Upcoming">Upcoming deadlines</option>
+  </select>
   <select id="country" onchange="render()"></select>
   <select id="company" onchange="render()"></select>
   <label class="muted" style="margin-left:8px">
@@ -179,6 +189,7 @@ PAGE = """
     <th onclick="sortBy('Role / posting')">Role / posting</th>
     <th onclick="sortBy('Type')">Type</th>
     <th onclick="sortBy('Deadline found')">Deadline</th>
+    <th onclick="sortBy('Posted')">Posted</th>
     <th>Links</th>
   </tr></thead>
   <tbody></tbody>
@@ -209,12 +220,15 @@ function render() {
   const country = document.getElementById("country").value;
   const company = document.getElementById("company").value;
   const dl = document.getElementById("deadline").checked;
+  const fresh = document.getElementById("fresh").value;
 
   let rows = ROWS.filter(r =>
     (!type || r.Type === type) &&
     (!country || r.Country === country) &&
     (!company || r.Company === company) &&
     (!dl || r["Deadline found"]) &&
+    (fresh === "" ||
+     (fresh === "hideold" ? r.Freshness !== "Out of date" : r.Freshness === fresh)) &&
     (!q || (r.Company + " " + r["Role / posting"] + " " + (r.City||""))
              .toLowerCase().includes(q)));
 
@@ -227,6 +241,8 @@ function render() {
       <td>${esc(r["Role / posting"])}</td>
       <td><span class="tag ${esc(r.Type)}">${esc(r.Type)}</span></td>
       <td>${esc(r["Deadline found"])}</td>
+      <td>${esc((r.Posted||"").split(" (")[0])}
+          <div class="muted fresh-${esc(r.Freshness).replace(/ /g,"")}">${esc(r.Freshness)}</div></td>
       <td><a href="${esc(r.Link)}" target="_blank" rel="noopener">open</a>
           ${r["Social accounts"] ? " · " + r["Social accounts"].split(" | ")
              .map(u => `<a href="${esc(u)}" target="_blank" rel="noopener">social</a>`)
