@@ -1,0 +1,17 @@
+# Python environment - rebuilt from requirements.txt, never committed
+.venv/
+__pycache__/
+
+# Scraped data - big, changes constantly, and not ours to redistribute
+operabase_orgs.csv
+operabase_details.csv
+operabase_details.jsonl
+targets.csv
+opera_jobs.csv
+opera_jobs.xlsx
+opera_jobs_final.xlsx
+jobs_targets.csv
+jobs_targets.xlsx
+*_cache.jsonl
+*.log
+companies_backup.csv
