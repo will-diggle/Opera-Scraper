@@ -15,3 +15,4 @@ jobs_targets.xlsx
 *_cache.jsonl
 *.log
 companies_backup.csv
+~$*
