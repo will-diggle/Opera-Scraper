@@ -20,6 +20,7 @@ from datetime import datetime
 from flask import Flask, jsonify, render_template_string, request
 
 from freshness import assess
+from stage5_prioritise import categorise
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PY = os.path.join(HERE, ".venv", "bin", "python")
@@ -103,6 +104,7 @@ def load_jobs():
         m = meta.get(r.get("Company", ""), {})
         r["City"] = m.get("city", "")
         r["Posted"], r["Freshness"] = assess(r)
+        r["Priority"] = categorise(r.get("Company", ""), m.get("org_type", ""))
     return rows
 
 
@@ -138,6 +140,17 @@ PAGE = """
  .log{background:#1c1c1c;color:#d6d6d6;font:12px/1.45 ui-monospace,Menlo,monospace;
       padding:12px;border-radius:6px;height:190px;overflow:auto;white-space:pre-wrap}
  .muted{color:var(--soft);font-size:13px}
+ .multi{position:relative;display:inline-block}
+ .pop{display:none;position:absolute;z-index:20;top:105%;left:0;background:#fff;
+      border:1px solid var(--line);border-radius:8px;padding:8px;min-width:230px;
+      max-height:280px;overflow:auto;box-shadow:0 6px 20px rgba(0,0,0,.13)}
+ .pop.open{display:block}
+ .pop label{display:block;padding:3px 4px;font-size:13.5px;cursor:pointer;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .pop label:hover{background:#eef2f8}
+ .pop input{margin-right:7px}
+ .pop .tools{display:flex;gap:6px;margin-bottom:6px;position:sticky;top:0;background:#fff}
+ .pop .tools input[type=search]{width:100%;padding:5px}
  .fresh-Outofdate{color:#a33}.fresh-Recent{color:#2a7}.fresh-Upcoming{color:#1b2a4e;font-weight:600}
 </style>
 <header>
@@ -174,16 +187,23 @@ PAGE = """
     <option value="Recent">Recent only</option>
     <option value="Upcoming">Upcoming deadlines</option>
   </select>
-  <select id="country" onchange="render()"></select>
-  <select id="company" onchange="render()"></select>
+  <span class="multi"><button class="ghost" onclick="openPanel('priority')"
+        id="b_priority">Priority: all</button><div class="pop" id="p_priority"></div></span>
+  <span class="multi"><button class="ghost" onclick="openPanel('country')"
+        id="b_country">Country: all</button><div class="pop" id="p_country"></div></span>
+  <span class="multi"><button class="ghost" onclick="openPanel('company')"
+        id="b_company">Company: all</button><div class="pop" id="p_company"></div></span>
   <label class="muted" style="margin-left:8px">
     <input type="checkbox" id="deadline" onchange="render()"> has a deadline
   </label>
+  <button onclick="exportCsv()" style="float:right">Export CSV</button>
+  <button class="ghost" onclick="clearFilters()" style="float:right">Clear filters</button>
   <span id="count" class="muted" style="margin-left:10px"></span>
 </div>
 
 <table id="tbl">
   <thead><tr>
+    <th onclick="sortBy('Priority')">Priority</th>
     <th onclick="sortBy('Company')">Company</th>
     <th onclick="sortBy('Country')">Country</th>
     <th onclick="sortBy('Role / posting')">Role / posting</th>
@@ -197,19 +217,61 @@ PAGE = """
 </div>
 
 <script>
-let ROWS = [], sortKey = "Company", sortDir = 1;
+let ROWS = [], SHOWN = [], sortKey = "Company", sortDir = 1;
 
 fetch("/api/jobs").then(r => r.json()).then(d => {
   ROWS = d;
-  fill("country", [...new Set(d.map(r => r.Country))].sort(), "Any country");
-  fill("company", [...new Set(d.map(r => r.Company))].sort(), "Any company");
+  buildMulti("priority", [...new Set(d.map(r => r.Priority))].sort());
+  buildMulti("country",  [...new Set(d.map(r => r.Country))].sort());
+  buildMulti("company",  [...new Set(d.map(r => r.Company))].sort());
   render();
 });
 
-function fill(id, vals, blank) {
-  const s = document.getElementById(id);
-  s.innerHTML = `<option value="">${blank}</option>` +
-    vals.filter(Boolean).map(v => `<option>${esc(v)}</option>`).join("");
+const SEL = {priority:new Set(), country:new Set(), company:new Set()};
+const OPTS = {};
+
+function buildMulti(name, vals) {
+  OPTS[name] = vals.filter(Boolean);
+  drawMulti(name, "");
+}
+function drawMulti(name, filterText) {
+  const pop = document.getElementById("p_" + name);
+  const shown = OPTS[name].filter(v =>
+    v.toLowerCase().includes((filterText||"").toLowerCase()));
+  pop.innerHTML =
+    `<div class="tools"><input type="search" placeholder="find…"
+        oninput="drawMulti('${name}', this.value)" value="${esc(filterText||"")}"></div>` +
+    `<label><input type="checkbox" onchange="toggleAll('${name}', this.checked)"
+        ${SEL[name].size===0?"checked":""}> <b>All</b></label>` +
+    shown.map(v => `<label><input type="checkbox" value="${esc(v)}"
+        onchange="pick('${name}', this)" ${SEL[name].has(v)?"checked":""}>
+        ${esc(v)}</label>`).join("");
+}
+function openPanel(name) {
+  document.querySelectorAll(".pop").forEach(p =>
+    p.classList.toggle("open", p.id === "p_" + name && !p.classList.contains("open")));
+  event.stopPropagation();
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest(".multi"))
+    document.querySelectorAll(".pop").forEach(p => p.classList.remove("open"));
+});
+function pick(name, box) {
+  box.checked ? SEL[name].add(box.value) : SEL[name].delete(box.value);
+  labelMulti(name); render();
+}
+function toggleAll(name, on) { if (on) SEL[name].clear(); labelMulti(name);
+  drawMulti(name, ""); render(); }
+function labelMulti(name) {
+  const n = SEL[name].size, cap = name[0].toUpperCase() + name.slice(1);
+  document.getElementById("b_" + name).textContent =
+    cap + ": " + (n === 0 ? "all" : (n === 1 ? [...SEL[name]][0].slice(0,22) : n + " selected"));
+}
+function clearFilters() {
+  Object.keys(SEL).forEach(k => { SEL[k].clear(); labelMulti(k); drawMulti(k, ""); });
+  document.getElementById("q").value = "";
+  document.getElementById("deadline").checked = false;
+  render();
 }
 function esc(s){ return (s||"").replace(/[&<>"]/g, c =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -217,15 +279,15 @@ function esc(s){ return (s||"").replace(/[&<>"]/g, c =>
 function render() {
   const q = document.getElementById("q").value.toLowerCase();
   const type = document.getElementById("type").value;
-  const country = document.getElementById("country").value;
-  const company = document.getElementById("company").value;
+
   const dl = document.getElementById("deadline").checked;
   const fresh = document.getElementById("fresh").value;
 
   let rows = ROWS.filter(r =>
     (!type || r.Type === type) &&
-    (!country || r.Country === country) &&
-    (!company || r.Company === company) &&
+    (SEL.priority.size === 0 || SEL.priority.has(r.Priority)) &&
+    (SEL.country.size  === 0 || SEL.country.has(r.Country)) &&
+    (SEL.company.size  === 0 || SEL.company.has(r.Company)) &&
     (!dl || r["Deadline found"]) &&
     (fresh === "" ||
      (fresh === "hideold" ? r.Freshness !== "Out of date" : r.Freshness === fresh)) &&
@@ -233,9 +295,11 @@ function render() {
              .toLowerCase().includes(q)));
 
   rows.sort((a,b) => ((a[sortKey]||"") > (b[sortKey]||"") ? 1 : -1) * sortDir);
+  SHOWN = rows;
 
   document.querySelector("#tbl tbody").innerHTML = rows.map(r => `
     <tr>
+      <td><span class="tag">${esc((r.Priority||"").replace(/ - /," "))}</span></td>
       <td>${esc(r.Company)}${r.City ? '<div class="muted">'+esc(r.City)+'</div>' : ''}</td>
       <td>${esc(r.Country)}</td>
       <td>${esc(r["Role / posting"])}</td>
@@ -250,6 +314,19 @@ function render() {
     </tr>`).join("");
   document.getElementById("count").textContent =
     rows.length + " of " + ROWS.length + " rows";
+}
+function exportCsv() {
+  const cols = ["Priority","Company","City","Country","Role / posting","Type",
+                "Deadline found","Posted","Freshness","Link","Social accounts",
+                "Found on page","Status","Notes"];
+  const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const csv = [cols.join(",")]
+    .concat(SHOWN.map(r => cols.map(c => q(r[c])).join(","))).join("\\n");
+  const stamp = new Date().toISOString().slice(0,10);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\\ufeff" + csv], {type:"text/csv"}));
+  a.download = `opera-jobs-${stamp}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
 }
 function sortBy(k){ sortDir = (k === sortKey) ? -sortDir : 1; sortKey = k; render(); }
 
