@@ -129,8 +129,9 @@ TEMPLATE = """<title>Opera Audition Watch</title>
   --ground:#f6f5f2; --panel:#ffffff; --ink:#191b1f; --ink-soft:#5d6472;
   --line:#dcdde2; --accent:#233a63; --accent-soft:#e8edf6;
   --live:#1d6b4f; --live-bg:#dcefe4; --quiet:#8a8f99;
-  --serif:"Charter","Bitstream Charter",Georgia,"Times New Roman",serif;
-  --sans:"Helvetica Neue",Inter,-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",
+          Georgia,serif;
+  --sans:var(--serif);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -148,15 +149,15 @@ TEMPLATE = """<title>Opera Audition Watch</title>
 body{margin:0;background:var(--ground);color:var(--ink);
   font:16px/1.55 var(--sans)}
 .masthead{padding:44px 28px 30px;max-width:1560px;margin:0 auto}
-.eyebrow{font:700 11px/1 var(--sans);letter-spacing:.14em;
+.eyebrow{font:600 11px/1 var(--serif);letter-spacing:.13em;
   text-transform:uppercase;color:var(--ink-soft)}
-h1{font:700 clamp(31px,4.7vw,48px)/1.06 var(--serif);margin:13px 0 0;
-  text-wrap:balance;letter-spacing:-.016em}
+h1{font:400 clamp(31px,4.7vw,47px)/1.08 var(--serif);margin:14px 0 0;
+  text-wrap:balance;letter-spacing:-.008em}
 .sub{color:var(--ink-soft);margin:12px 0 0;max-width:60ch;
   font:16.5px/1.5 var(--serif)}
 .stats{display:flex;flex-wrap:wrap;gap:26px;margin-top:26px;
   padding-top:22px;border-top:1px solid var(--line)}
-.stat b{display:block;font:700 28px/1 var(--serif);
+.stat b{display:block;font:400 28px/1 var(--serif);
   font-variant-numeric:tabular-nums}
 .stat span{font-size:12px;color:var(--ink-soft);letter-spacing:.04em;
   text-transform:uppercase}
@@ -179,16 +180,17 @@ button:focus-visible,input:focus-visible,select:focus-visible{
 main{max-width:1560px;margin:0 auto;padding:22px 28px 70px}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);
   border-radius:10px}
-table{border-collapse:collapse;width:100%;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;
+  font-variant-numeric:tabular-nums}
 th{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);
-  font:700 11px/1 var(--sans);letter-spacing:.09em;
+  font:600 11.5px/1 var(--serif);letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-soft);white-space:nowrap;cursor:pointer}
 td{padding:12px 13px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
 .chip{display:inline-block;font-size:11px;padding:2.5px 8px;border-radius:99px;
   background:var(--accent-soft);color:var(--accent);white-space:nowrap}
 .chip.live{background:var(--live-bg);color:var(--live)}
-.co{font:700 15px/1.3 var(--serif)}
+.co{font:600 15px/1.3 var(--serif)}
 .city{color:var(--ink-soft);font-size:12.5px}
 .when{font-variant-numeric:tabular-nums;white-space:nowrap}
 .q{color:var(--quiet);font-size:12px}

@@ -120,26 +120,25 @@ PAGE = """
 <style>
  :root{--bg:#faf9f5;--panel:#ffffff;--ink:#1f1e1b;--line:#e6e3db;
         --accent:#3b3833;--soft:#736f66;--tint:#f0eee7;
-        /* Guardian sets headlines in Guardian Egyptian, a slab serif, and
-           furniture in a grotesque sans. Those faces are licensed to them,
-           so this is the closest pairing from fonts already on the Mac. */
-        --serif:"Charter","Bitstream Charter","Georgia","Times New Roman",serif;
-        --sans:"Helvetica Neue","Inter",-apple-system,BlinkMacSystemFont,
-               "Segoe UI",Arial,sans-serif}
+        /* Iowan Old Style throughout - a Venetian oldstyle, warm and
+           bookish. Falls back to Palatino, then Georgia, off this Mac. */
+        --serif:"Iowan Old Style","Palatino Linotype",Palatino,
+                "Book Antiqua",Georgia,serif;
+        --sans:var(--serif)}
  *{box-sizing:border-box}
- body{margin:0;font:15px/1.55 var(--sans);
+ body{margin:0;font:15.5px/1.55 var(--serif);
       background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
  header{background:transparent;color:var(--ink);padding:34px 24px 20px;
         max-width:1500px;border-bottom:1px solid var(--line)}
- header .eyebrow{font:700 11px/1 var(--sans);letter-spacing:.14em;
+ header .eyebrow{font:600 11px/1 var(--serif);letter-spacing:.13em;
         text-transform:uppercase;color:var(--soft)}
- header h1{margin:10px 0 0;font:700 36px/1.08 var(--serif);
-        letter-spacing:-.015em}
+ header h1{margin:10px 0 0;font:400 37px/1.1 var(--serif);
+        letter-spacing:-.008em}
  header p{margin:10px 0 0;color:var(--soft);font:16px/1.5 var(--serif);
         max-width:60ch}
  .wrap{padding:20px 24px;max-width:1500px}
- .panel > strong{font:700 15px/1.2 var(--serif)}
- td .co, td b{font:700 14.5px/1.3 var(--serif)}
+ .panel > strong{font:600 15.5px/1.2 var(--serif)}
+ td .co, td b{font:600 15px/1.3 var(--serif)}
  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
         padding:18px;margin-bottom:16px}
  button{font:inherit;padding:8px 14px;border-radius:9px;border:1px solid var(--accent);
@@ -151,12 +150,12 @@ PAGE = """
               border-radius:9px;background:var(--panel);color:var(--ink)}
  input[type=search]{width:320px}
  table{border-collapse:collapse;width:100%;background:var(--panel);
-       font-size:13.5px;border:1px solid var(--line);border-radius:12px}
+       font-size:14px;font-variant-numeric:tabular-nums;border:1px solid var(--line);border-radius:12px}
  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
        vertical-align:top}
  th{background:var(--tint);position:sticky;top:0;cursor:pointer;
-       white-space:nowrap;font:700 11px/1 var(--sans);
-       letter-spacing:.08em;text-transform:uppercase;color:var(--soft);
+       white-space:nowrap;font:600 11.5px/1 var(--serif);
+       letter-spacing:.07em;text-transform:uppercase;color:var(--soft);
        padding:11px 10px}
  tr:hover td{background:var(--bg)}
  a{color:var(--accent)}
