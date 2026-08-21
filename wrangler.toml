@@ -1,0 +1,4 @@
+# Cloudflare Pages project for the public site.
+# Deploy with:  npx wrangler pages deploy site --project-name=opera-audition-watch
+name = "opera-audition-watch"
+pages_build_output_dir = "site"

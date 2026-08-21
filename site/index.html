@@ -1,0 +1,365 @@
+<title>Opera Audition Watch</title>
+<style>
+:root{
+  --ground:#f6f5f2; --panel:#ffffff; --ink:#191b1f; --ink-soft:#5d6472;
+  --line:#dcdde2; --accent:#233a63; --accent-soft:#e8edf6;
+  --live:#1d6b4f; --live-bg:#dcefe4; --quiet:#8a8f99;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",
+          Georgia,serif;
+  --sans:var(--serif);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#14161a; --panel:#1c1f25; --ink:#eceef2; --ink-soft:#a2a9b6;
+    --line:#2e323b; --accent:#a8c0e8; --accent-soft:#232a38;
+    --live:#7fd3ab; --live-bg:#1c3329; --quiet:#767d8a;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14161a; --panel:#1c1f25; --ink:#eceef2; --ink-soft:#a2a9b6;
+  --line:#2e323b; --accent:#a8c0e8; --accent-soft:#232a38;
+  --live:#7fd3ab; --live-bg:#1c3329; --quiet:#767d8a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:16px/1.55 var(--sans)}
+.masthead{padding:44px 28px 30px;max-width:1560px;margin:0 auto}
+.eyebrow{font:600 11px/1 var(--serif);letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-soft)}
+h1{font:400 clamp(31px,4.7vw,47px)/1.08 var(--serif);margin:14px 0 0;
+  text-wrap:balance;letter-spacing:-.008em}
+.sub{color:var(--ink-soft);margin:12px 0 0;max-width:60ch;
+  font:16.5px/1.5 var(--serif)}
+.stats{display:flex;flex-wrap:wrap;gap:26px;margin-top:26px;
+  padding-top:22px;border-top:1px solid var(--line)}
+.stat b{display:block;font:400 28px/1 var(--serif);
+  font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--ink-soft);letter-spacing:.04em;
+  text-transform:uppercase}
+.bar{position:sticky;top:0;z-index:5;background:var(--ground);
+  border-bottom:1px solid var(--line);padding:12px 28px}
+.bar .in{max-width:1560px;margin:0 auto;display:flex;flex-wrap:wrap;
+  gap:9px;align-items:center}
+input[type=search],select{font:inherit;font-size:14px;padding:8px 11px;
+  border:1px solid var(--line);border-radius:7px;background:var(--panel);
+  color:var(--ink)}
+input[type=search]{min-width:250px;flex:1 1 250px}
+button{font:inherit;font-size:14px;padding:8px 13px;border-radius:7px;
+  border:1px solid var(--accent);background:var(--accent);
+  color:var(--ground);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px}
+.count{color:var(--ink-soft);font-size:13px;margin-left:auto;
+  font-variant-numeric:tabular-nums}
+main{max-width:1560px;margin:0 auto;padding:22px 28px 70px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;
+  font-variant-numeric:tabular-nums}
+th{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);
+  font:600 11.5px/1 var(--serif);letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);white-space:nowrap;cursor:pointer}
+td{padding:12px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-block;font-size:11px;padding:2.5px 8px;border-radius:99px;
+  background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.chip.live{background:var(--live-bg);color:var(--live)}
+.co{font:600 15px/1.3 var(--serif)}
+.city{color:var(--ink-soft);font-size:12.5px}
+.when{font-variant-numeric:tabular-nums;white-space:nowrap}
+.q{color:var(--quiet);font-size:12px}
+a{color:var(--accent)}
+tr.done td{background:#edf4ee}
+.empty{padding:50px;text-align:center;color:var(--ink-soft)}
+.multi{position:relative;display:inline-block}
+.pop{display:none;position:absolute;z-index:30;top:112%;left:0;
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;
+  padding:9px;min-width:250px;max-height:330px;overflow:auto;
+  box-shadow:0 10px 30px rgba(0,0,0,.14)}
+.pop.open{display:block}
+.pop label{display:block;padding:4px 5px;font-size:14px;cursor:pointer;
+  border-radius:6px}
+.pop label:hover{background:var(--ground)}
+.pop input{margin-right:8px;accent-color:var(--accent)}
+.pop .grp{font:600 11px/1 var(--sans);letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-soft);padding:11px 5px 4px;
+  display:flex;justify-content:space-between;align-items:center}
+.pop .grp button{font-size:11px;padding:2px 7px;margin:0}
+.pop .allrow{border-bottom:1px solid var(--line);padding-bottom:6px;
+  margin-bottom:2px}
+th.pick,td.pick{width:34px;padding-right:0;text-align:center}
+td.pick input,th.pick input{width:15px;height:15px;cursor:pointer;accent-color:var(--accent)}
+tr.chosen td{background:var(--accent-soft)}
+.selnote{color:var(--ink-soft);font-size:13px}
+.selnote button{padding:4px 9px;font-size:12.5px;margin-left:6px}
+footer{max-width:1560px;margin:0 auto;padding:0 28px 60px;
+  color:var(--ink-soft);font-size:13px;line-height:1.6}
+footer p{max-width:70ch}
+</style>
+
+<div class="masthead">
+  <div class="eyebrow">Websites last checked &middot; loading…</div>
+  <h1>Opera Audition Watch</h1>
+  <p class="sub">Singer openings gathered from opera house, festival and
+     professional choir websites across Europe. Every row links to the
+     company's own page &mdash; always confirm details there before applying.</p>
+  <div class="stats">
+    <div class="stat"><b>__N__</b><span>openings listed</span></div>
+    <div class="stat"><b>__UPCOMING__</b><span>with a future date</span></div>
+    <div class="stat"><b>__COUNTRIES__</b><span>countries</span></div>
+    <div class="stat"><b>__COMPANIES__</b><span>companies</span></div>
+  </div>
+</div>
+
+<div class="bar"><div class="in">
+  <input type="search" id="q" placeholder="Search role, company or city…">
+  <span class="multi"><button class="ghost" id="b_country"
+        onclick="openPanel(event,'country')">All countries</button>
+    <div class="pop" id="p_country"></div></span>
+  <span class="multi"><button class="ghost" id="b_kind"
+        onclick="openPanel(event,'kind')">All kinds</button>
+    <div class="pop" id="p_kind"></div></span>
+  <select id="when">
+    <option value="">Any date</option>
+    <option value="Upcoming">Dated ahead</option>
+    <option value="Recent">Posted recently</option>
+  </select>
+  <select id="checked"></select>
+  <button class="ghost" id="csv">Download Excel</button>
+  <span class="selnote"><button class="ghost" id="clearsel" hidden>Clear selection</button></span>
+  <span class="count" id="count"></span>
+</div></div>
+
+<main>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th class="pick"><input type="checkbox" id="all"
+            title="Select everything matching the current filters"></th>
+        <th data-k="1">Company</th><th data-k="3">Country</th>
+        <th data-k="4">Role</th><th data-k="0">Kind</th>
+        <th data-k="5">Deadline</th><th data-k="6">Posted</th>
+        <th data-k="9">Checked</th><th>Applied</th><th>In touch</th><th>Link</th>
+      </tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="empty" hidden>Nothing matches those filters.</div>
+</main>
+
+<footer>
+  <p><strong>How this was made.</strong> Company websites were checked
+  automatically for audition, chorus and young-artist pages. Listings that
+  could be dated and had clearly passed were removed, but many pages carry no
+  date at all, so some entries here may already be closed. This is a research
+  aid, not an official listing.</p>
+</footer>
+
+<script>
+const COLS = ["Kind","Company","City","Country","Role","Deadline","Posted",
+              "Freshness","Link","Checked"];
+let ROWS = [];
+const KEYS = ["Kind","Company","City","Country","Role","Deadline","Posted",
+              "Freshness","Link","Checked"];
+ROWS.forEach((r, i) => r[10] = i);          // stable id for selection
+const PICKED = new Set();
+let view = ROWS, sortK = null, sortDir = 1;
+
+const $ = id => document.getElementById(id);
+const esc = s => (s||"").replace(/[&<>"]/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const checked = [...new Set(ROWS.map(r => r[9]))].filter(Boolean).sort().reverse();
+$("checked").innerHTML = '<option value="">Checked any time</option>' +
+  checked.map(d => `<option value="${esc(d)}">Checked ${esc(d)}</option>`).join("");
+
+const REGIONS = {"UK": "Britain & Ireland", "Ireland": "Britain & Ireland", "Germany": "German-speaking", "Austria": "German-speaking", "Switzerland": "German-speaking", "France": "Western Europe", "Belgium": "Western Europe", "Netherlands": "Western Europe", "Luxembourg": "Western Europe", "Monaco": "Western Europe", "Italy": "Southern Europe", "Spain": "Southern Europe", "Portugal": "Southern Europe", "Greece": "Southern Europe", "Malta": "Southern Europe", "Cyprus": "Southern Europe", "Denmark": "Nordic", "Sweden": "Nordic", "Norway": "Nordic", "Finland": "Nordic", "Iceland": "Nordic", "Poland": "Central & Eastern", "Czechia": "Central & Eastern", "Slovakia": "Central & Eastern", "Hungary": "Central & Eastern", "Romania": "Central & Eastern", "Bulgaria": "Central & Eastern", "Croatia": "Central & Eastern", "Slovenia": "Central & Eastern", "Serbia": "Central & Eastern", "Estonia": "Central & Eastern", "Latvia": "Central & Eastern", "Lithuania": "Central & Eastern", "USA": "North America", "Canada": "North America", "Australia": "Australasia", "New Zealand": "Australasia", "Israel": "Elsewhere"};
+const MINE = {};
+const PICK = {country:new Set(), kind:new Set()};
+const OPTS = {
+  country: [...new Set(ROWS.map(r => r[3]))].filter(Boolean).sort(),
+  kind:    [...new Set(ROWS.map(r => r[0]))].filter(Boolean).sort(),
+};
+
+function openPanel(ev, name){
+  const pop = document.getElementById("p_" + name);
+  const wasOpen = pop.classList.contains("open");
+  document.querySelectorAll(".pop").forEach(p => p.classList.remove("open"));
+  if (!wasOpen) { drawPanel(name); pop.classList.add("open"); }
+  ev.stopPropagation();
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest(".multi"))
+    document.querySelectorAll(".pop").forEach(p => p.classList.remove("open"));
+});
+
+function drawPanel(name){
+  const pop = document.getElementById("p_" + name);
+  const box = (v) => `<label><input type="checkbox" value="${esc(v)}"
+      ${PICK[name].has(v) ? "checked" : ""}
+      onchange="pick('${name}', this)"> ${esc(v)}</label>`;
+  let html = `<div class="allrow"><label><input type="checkbox"
+      ${PICK[name].size === 0 ? "checked" : ""}
+      onchange="clearPick('${name}')"> <b>Everything</b></label></div>`;
+
+  if (name === "country"){
+    const groups = {};
+    OPTS.country.forEach(c => {
+      const g = REGIONS[c] || "Elsewhere";
+      (groups[g] = groups[g] || []).push(c);
+    });
+    for (const g of Object.keys(groups).sort())
+      html += `<div class="grp">${esc(g)}
+          <button class="ghost" onclick="pickGroup('${esc(g)}')">all</button>
+        </div>` + groups[g].map(box).join("");
+  } else {
+    html += OPTS[name].map(box).join("");
+  }
+  pop.innerHTML = html;
+}
+
+function pick(name, el){
+  el.checked ? PICK[name].add(el.value) : PICK[name].delete(el.value);
+  labelFor(name); drawPanel(name); draw();
+}
+function clearPick(name){ PICK[name].clear(); labelFor(name); drawPanel(name); draw(); }
+function pickGroup(g){
+  const inGroup = OPTS.country.filter(c => (REGIONS[c] || "Elsewhere") === g);
+  const allOn = inGroup.every(c => PICK.country.has(c));
+  inGroup.forEach(c => allOn ? PICK.country.delete(c) : PICK.country.add(c));
+  labelFor("country"); drawPanel("country"); draw();
+}
+function labelFor(name){
+  const n = PICK[name].size;
+  const base = name === "country" ? "countries" : "kinds";
+  document.getElementById("b_" + name).textContent =
+    n === 0 ? "All " + base
+            : (n === 1 ? [...PICK[name]][0] : n + " " + base + " selected");
+}
+
+function draw(){
+  const q = $("q").value.toLowerCase().trim();
+  const w = $("when").value, ch = $("checked").value;
+  view = ROWS.filter(r =>
+    (PICK.country.size === 0 || PICK.country.has(r[3])) &&
+    (PICK.kind.size === 0 || PICK.kind.has(r[0])) &&
+    (!w || r[7] === w) && (!ch || r[9] === ch) &&
+    (!q || (r[1] + " " + r[4] + " " + r[2]).toLowerCase().includes(q)));
+  if (sortK !== null)
+    view = [...view].sort((a,b) =>
+      ((a[sortK]||"") > (b[sortK]||"") ? 1 : -1) * sortDir);
+
+  $("body").innerHTML = view.map(r => `<tr class="${(MINE[r[10]]||{}).applied?"done":(PICKED.has(r[10])?"chosen":"")}">
+    <td class="pick"><input type="checkbox" data-i="${r[10]}"
+        ${PICKED.has(r[10])?"checked":""}></td>
+    <td><div class="co">${esc(r[1])}</div>${r[2] ?
+        `<div class="city">${esc(r[2])}</div>` : ""}</td>
+    <td>${esc(r[3])}</td>
+    <td>${esc(r[4])}</td>
+    <td><span class="chip">${esc(r[0])}</span></td>
+    <td class="when">${r[5] ? esc(r[5]) : '<span class="q">&mdash;</span>'}</td>
+    <td class="when">${r[6] ? `<span class="chip ${r[7]==="Upcoming"?"live":""}">
+        ${esc(r[6])}</span>` : '<span class="q">no date</span>'}</td>
+    <td class="when q">${esc(r[9])}</td>
+    <td class="pick"><input type="checkbox" ${(MINE[r[10]]||{}).applied?"checked":""}
+        onchange="mark(${r[10]},'applied',this.checked)"></td>
+    <td class="pick"><input type="checkbox" ${(MINE[r[10]]||{}).touched?"checked":""}
+        onchange="mark(${r[10]},'touched',this.checked)"></td>
+    <td><a href="${esc(r[8])}" target="_blank" rel="noopener">open</a></td>
+  </tr>`).join("");
+  $("empty").hidden = view.length > 0;
+  $("count").textContent = PICKED.size
+    ? `${PICKED.size} selected \u00b7 ${view.length} of ${ROWS.length}`
+    : `${view.length} of ${ROWS.length}`;
+  syncAll();
+  $("csv").textContent = PICKED.size
+    ? `Download ${PICKED.size} selected` : "Download Excel";
+  $("clearsel").hidden = PICKED.size === 0;
+}
+
+["q","when","checked"].forEach(id =>
+  $(id).addEventListener("input", draw));
+
+// one listener for every row box, now and after every redraw
+$("body").addEventListener("change", e => {
+  const box = e.target.closest("input[type=checkbox][data-i]");
+  if (!box) return;
+  const id = +box.dataset.i;
+  box.checked ? PICKED.add(id) : PICKED.delete(id);
+  box.closest("tr").classList.toggle("chosen", box.checked);
+  draw();
+});
+
+function syncAll() {
+  const box = $("all");
+  const shown = view.length;
+  const on = view.filter(r => PICKED.has(r[10])).length;
+  box.checked = shown > 0 && on === shown;
+  box.indeterminate = on > 0 && on < shown;
+}
+
+$("all").addEventListener("change", e => {
+  // ticks or clears every row the current filters match, not just this page
+  view.forEach(r => e.target.checked ? PICKED.add(r[10]) : PICKED.delete(r[10]));
+  draw();
+});
+
+$("clearsel").addEventListener("click", () => { PICKED.clear(); draw(); });
+document.querySelectorAll("th[data-k]").forEach(th =>
+  th.addEventListener("click", () => {
+    const k = +th.dataset.k;
+    sortDir = (k === sortK) ? -sortDir : 1; sortK = k; draw();
+  }));
+draw();
+</script>
+
+<script src="./xlsx.js"></script>
+<script>
+function download(){
+  const chosen = PICKED.size ? view.filter(r => PICKED.has(r[10])) : view;
+  const cols = [
+    {header:"Applied", width:10}, {header:"In touch", width:10},
+    {header:"Company", width:28}, {header:"City", width:15},
+    {header:"Country", width:12}, {header:"Role", width:54},
+    {header:"Kind", width:22}, {header:"Deadline", width:14},
+    {header:"Posted", width:13}, {header:"Checked", width:12},
+    {header:"Link", width:46}];
+  const rows = chosen.map(r => [
+    (MINE[r[10]]||{}).applied ? "Yes" : "No",
+    (MINE[r[10]]||{}).touched ? "Yes" : "No",
+    r[1], r[2], r[3], r[4], r[0], r[5], r[6], r[9], r[8]]);
+  const blob = miniXlsx.build({sheet:"Opera auditions", columns:cols, rows,
+                               tickColumns:[0, 1]});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "opera-auditions.xlsx";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+document.getElementById("csv").addEventListener("click", download);
+
+// each visitor's ticks live in their own browser only
+Object.assign(MINE, JSON.parse(localStorage.getItem("mine") || "{}"));
+function mark(i, field, on){
+  MINE[i] = MINE[i] || {};
+  MINE[i][field] = on;
+  localStorage.setItem("mine", JSON.stringify(MINE));
+  draw();
+}
+
+fetch("./data.json").then(r => r.json()).then(d => {
+  ROWS = d.rows.map(o => KEYS.map(k => o[k]));
+  ROWS.forEach((r, i) => r[10] = i);
+  document.querySelector(".eyebrow").textContent =
+    "Websites last checked \u00b7 " + d.checked;
+  OPTS.country = [...new Set(ROWS.map(r => r[3]))].filter(Boolean).sort();
+  OPTS.kind = [...new Set(ROWS.map(r => r[0]))].filter(Boolean).sort();
+  document.querySelector(".stats").innerHTML =
+    `<div class="stat"><b>${ROWS.length}</b><span>openings listed</span></div>
+     <div class="stat"><b>${ROWS.filter(r=>r[7]==="Upcoming").length}</b>
+       <span>with a future date</span></div>
+     <div class="stat"><b>${new Set(ROWS.map(r=>r[3])).size}</b><span>countries</span></div>
+     <div class="stat"><b>${new Set(ROWS.map(r=>r[1])).size}</b><span>companies</span></div>`;
+  draw();
+});
+</script>
