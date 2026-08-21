@@ -145,7 +145,7 @@ TEMPLATE = """<title>Opera Audition Watch</title>
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);
   font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-.masthead{padding:44px 28px 30px;max-width:1180px;margin:0 auto}
+.masthead{padding:44px 28px 30px;max-width:1560px;margin:0 auto}
 .eyebrow{font:600 11px/1 -apple-system,sans-serif;letter-spacing:.16em;
   text-transform:uppercase;color:var(--ink-soft)}
 h1{font:400 clamp(30px,4.6vw,46px)/1.1 "Iowan Old Style","Palatino Linotype",
@@ -159,7 +159,7 @@ h1{font:400 clamp(30px,4.6vw,46px)/1.1 "Iowan Old Style","Palatino Linotype",
   text-transform:uppercase}
 .bar{position:sticky;top:0;z-index:5;background:var(--ground);
   border-bottom:1px solid var(--line);padding:12px 28px}
-.bar .in{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;
+.bar .in{max-width:1560px;margin:0 auto;display:flex;flex-wrap:wrap;
   gap:9px;align-items:center}
 input[type=search],select{font:inherit;font-size:14px;padding:8px 11px;
   border:1px solid var(--line);border-radius:7px;background:var(--panel);
@@ -173,7 +173,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{
   outline:2px solid var(--accent);outline-offset:2px}
 .count{color:var(--ink-soft);font-size:13px;margin-left:auto;
   font-variant-numeric:tabular-nums}
-main{max-width:1180px;margin:0 auto;padding:22px 28px 70px}
+main{max-width:1560px;margin:0 auto;padding:22px 28px 70px}
 .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);
   border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:14px}
@@ -191,7 +191,12 @@ tr:last-child td{border-bottom:0}
 .q{color:var(--quiet);font-size:12px}
 a{color:var(--accent)}
 .empty{padding:50px;text-align:center;color:var(--ink-soft)}
-footer{max-width:1180px;margin:0 auto;padding:0 28px 60px;
+th.pick,td.pick{width:34px;padding-right:0;text-align:center}
+td.pick input,th.pick input{width:15px;height:15px;cursor:pointer;accent-color:var(--accent)}
+tr.chosen td{background:var(--accent-soft)}
+.selnote{color:var(--ink-soft);font-size:13px}
+.selnote button{padding:4px 9px;font-size:12.5px;margin-left:6px}
+footer{max-width:1560px;margin:0 auto;padding:0 28px 60px;
   color:var(--ink-soft);font-size:13px;line-height:1.6}
 footer p{max-width:70ch}
 </style>
@@ -227,6 +232,7 @@ footer p{max-width:70ch}
   </select>
   <select id="checked"></select>
   <button class="ghost" id="csv">Download CSV</button>
+  <span class="selnote"><button class="ghost" id="clearsel" hidden>Clear selection</button></span>
   <span class="count" id="count"></span>
 </div></div>
 
@@ -234,6 +240,8 @@ footer p{max-width:70ch}
   <div class="tablewrap">
     <table>
       <thead><tr>
+        <th class="pick"><input type="checkbox" id="all"
+            title="Select everything matching the current filters"></th>
         <th data-k="1">Company</th><th data-k="3">Country</th>
         <th data-k="4">Role</th><th data-k="0">Kind</th>
         <th data-k="5">Deadline</th><th data-k="6">Posted</th>
@@ -257,6 +265,8 @@ footer p{max-width:70ch}
 const COLS = ["Kind","Company","City","Country","Role","Deadline","Posted",
               "Freshness","Link","Checked"];
 const ROWS = __DATA__;
+ROWS.forEach((r, i) => r[10] = i);          // stable id for selection
+const PICKED = new Set();
 let view = ROWS, sortK = null, sortDir = 1;
 
 const $ = id => document.getElementById(id);
@@ -283,7 +293,9 @@ function draw(){
     view = [...view].sort((a,b) =>
       ((a[sortK]||"") > (b[sortK]||"") ? 1 : -1) * sortDir);
 
-  $("body").innerHTML = view.map(r => `<tr>
+  $("body").innerHTML = view.map(r => `<tr class="${PICKED.has(r[10])?"chosen":""}">
+    <td class="pick"><input type="checkbox" data-i="${r[10]}"
+        ${PICKED.has(r[10])?"checked":""}></td>
     <td><div class="co">${esc(r[1])}</div>${r[2] ?
         `<div class="city">${esc(r[2])}</div>` : ""}</td>
     <td>${esc(r[3])}</td>
@@ -296,11 +308,43 @@ function draw(){
     <td><a href="${esc(r[8])}" target="_blank" rel="noopener">open</a></td>
   </tr>`).join("");
   $("empty").hidden = view.length > 0;
-  $("count").textContent = view.length + " of " + ROWS.length;
+  $("count").textContent = PICKED.size
+    ? `${PICKED.size} selected \u00b7 ${view.length} of ${ROWS.length}`
+    : `${view.length} of ${ROWS.length}`;
+  syncAll();
+  $("csv").textContent = PICKED.size
+    ? `Download ${PICKED.size} selected` : "Download CSV";
+  $("clearsel").hidden = PICKED.size === 0;
 }
 
 ["q","country","prio","when","checked"].forEach(id =>
   $(id).addEventListener("input", draw));
+
+// one listener for every row box, now and after every redraw
+$("body").addEventListener("change", e => {
+  const box = e.target.closest("input[type=checkbox][data-i]");
+  if (!box) return;
+  const id = +box.dataset.i;
+  box.checked ? PICKED.add(id) : PICKED.delete(id);
+  box.closest("tr").classList.toggle("chosen", box.checked);
+  draw();
+});
+
+function syncAll() {
+  const box = $("all");
+  const shown = view.length;
+  const on = view.filter(r => PICKED.has(r[10])).length;
+  box.checked = shown > 0 && on === shown;
+  box.indeterminate = on > 0 && on < shown;
+}
+
+$("all").addEventListener("change", e => {
+  // ticks or clears every row the current filters match, not just this page
+  view.forEach(r => e.target.checked ? PICKED.add(r[10]) : PICKED.delete(r[10]));
+  draw();
+});
+
+$("clearsel").addEventListener("click", () => { PICKED.clear(); draw(); });
 document.querySelectorAll("th[data-k]").forEach(th =>
   th.addEventListener("click", () => {
     const k = +th.dataset.k;
@@ -308,15 +352,17 @@ document.querySelectorAll("th[data-k]").forEach(th =>
   }));
 let saver = null;
 (async () => {
+  // In the shared viewer this returns the save API; in a plain browser it is
+  // null and we fall back to an ordinary download link.
   saver = (window.claude && claude.use) ? await claude.use("downloads") : null;
-  // No save route in this viewer: don't show a button that cannot work.
-  if (!saver && !window.isSecureContext) $("csv").hidden = true;
 })();
 
 $("csv").addEventListener("click", async () => {
   const quote = v => '"' + String(v==null?"":v).replace(/"/g,'""') + '"';
+  const chosen = PICKED.size ? view.filter(r => PICKED.has(r[10])) : view;
   const csv = [COLS.join(",")]
-    .concat(view.map(r => r.map(quote).join(","))).join("\\n");
+    .concat(chosen.map(r => r.slice(0, COLS.length).map(quote).join(",")))
+    .join("\\n");
   const body = "\\ufeff" + csv;
   const btn = $("csv"), original = btn.textContent;
   if (saver) {
