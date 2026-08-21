@@ -41,6 +41,31 @@ COUNTRY = {
     "SK": "Slovakia", "UK": "UK",
 }
 
+# Grouping for the country filter, so you can take a whole region at once.
+REGION = {
+    "UK": "Britain & Ireland", "Ireland": "Britain & Ireland",
+    "Germany": "German-speaking", "Austria": "German-speaking",
+    "Switzerland": "German-speaking",
+    "France": "Western Europe", "Belgium": "Western Europe",
+    "Netherlands": "Western Europe", "Luxembourg": "Western Europe",
+    "Monaco": "Western Europe",
+    "Italy": "Southern Europe", "Spain": "Southern Europe",
+    "Portugal": "Southern Europe", "Greece": "Southern Europe",
+    "Malta": "Southern Europe", "Cyprus": "Southern Europe",
+    "Denmark": "Nordic", "Sweden": "Nordic", "Norway": "Nordic",
+    "Finland": "Nordic", "Iceland": "Nordic",
+    "Poland": "Central & Eastern", "Czechia": "Central & Eastern",
+    "Slovakia": "Central & Eastern", "Hungary": "Central & Eastern",
+    "Romania": "Central & Eastern", "Bulgaria": "Central & Eastern",
+    "Croatia": "Central & Eastern", "Slovenia": "Central & Eastern",
+    "Serbia": "Central & Eastern", "Estonia": "Central & Eastern",
+    "Latvia": "Central & Eastern", "Lithuania": "Central & Eastern",
+    "USA": "North America", "Canada": "North America",
+    "Australia": "Australasia", "New Zealand": "Australasia",
+    "Israel": "Elsewhere",
+}
+
+
 # Photo credits and "read more" tails get swept up with the headline text.
 JUNK = re.compile(
     r"^.{0,60}?\bon\s+Unsplash\b\s*"                       # photo credits
@@ -196,6 +221,22 @@ tr:last-child td{border-bottom:0}
 .q{color:var(--quiet);font-size:12px}
 a{color:var(--accent)}
 .empty{padding:50px;text-align:center;color:var(--ink-soft)}
+.multi{position:relative;display:inline-block}
+.pop{display:none;position:absolute;z-index:30;top:112%;left:0;
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;
+  padding:9px;min-width:250px;max-height:330px;overflow:auto;
+  box-shadow:0 10px 30px rgba(0,0,0,.14)}
+.pop.open{display:block}
+.pop label{display:block;padding:4px 5px;font-size:14px;cursor:pointer;
+  border-radius:6px}
+.pop label:hover{background:var(--ground)}
+.pop input{margin-right:8px;accent-color:var(--accent)}
+.pop .grp{font:600 11px/1 var(--sans);letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-soft);padding:11px 5px 4px;
+  display:flex;justify-content:space-between;align-items:center}
+.pop .grp button{font-size:11px;padding:2px 7px;margin:0}
+.pop .allrow{border-bottom:1px solid var(--line);padding-bottom:6px;
+  margin-bottom:2px}
 th.pick,td.pick{width:34px;padding-right:0;text-align:center}
 td.pick input,th.pick input{width:15px;height:15px;cursor:pointer;accent-color:var(--accent)}
 tr.chosen td{background:var(--accent-soft)}
@@ -222,14 +263,12 @@ footer p{max-width:70ch}
 
 <div class="bar"><div class="in">
   <input type="search" id="q" placeholder="Search role, company or city…">
-  <select id="country"></select>
-  <select id="prio">
-    <option value="">All kinds</option>
-    <option>Opera house / theatre</option>
-    <option>Festival</option>
-    <option>Professional choir</option>
-    <option>Orchestra / concert</option>
-  </select>
+  <span class="multi"><button class="ghost" id="b_country"
+        onclick="openPanel(event,'country')">All countries</button>
+    <div class="pop" id="p_country"></div></span>
+  <span class="multi"><button class="ghost" id="b_kind"
+        onclick="openPanel(event,'kind')">All kinds</button>
+    <div class="pop" id="p_kind"></div></span>
   <select id="when">
     <option value="">Any date</option>
     <option value="Upcoming">Dated ahead</option>
@@ -282,17 +321,76 @@ const checked = [...new Set(ROWS.map(r => r[9]))].filter(Boolean).sort().reverse
 $("checked").innerHTML = '<option value="">Checked any time</option>' +
   checked.map(d => `<option value="${esc(d)}">Checked ${esc(d)}</option>`).join("");
 
-const countries = [...new Set(ROWS.map(r => r[3]))].filter(Boolean).sort();
-$("country").innerHTML = '<option value="">All countries</option>' +
-  countries.map(c => `<option>${esc(c)}</option>`).join("");
+const REGIONS = __REGIONS__;
+const PICK = {country:new Set(), kind:new Set()};
+const OPTS = {
+  country: [...new Set(ROWS.map(r => r[3]))].filter(Boolean).sort(),
+  kind:    [...new Set(ROWS.map(r => r[0]))].filter(Boolean).sort(),
+};
+
+function openPanel(ev, name){
+  const pop = document.getElementById("p_" + name);
+  const wasOpen = pop.classList.contains("open");
+  document.querySelectorAll(".pop").forEach(p => p.classList.remove("open"));
+  if (!wasOpen) { drawPanel(name); pop.classList.add("open"); }
+  ev.stopPropagation();
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest(".multi"))
+    document.querySelectorAll(".pop").forEach(p => p.classList.remove("open"));
+});
+
+function drawPanel(name){
+  const pop = document.getElementById("p_" + name);
+  const box = (v) => `<label><input type="checkbox" value="${esc(v)}"
+      ${PICK[name].has(v) ? "checked" : ""}
+      onchange="pick('${name}', this)"> ${esc(v)}</label>`;
+  let html = `<div class="allrow"><label><input type="checkbox"
+      ${PICK[name].size === 0 ? "checked" : ""}
+      onchange="clearPick('${name}')"> <b>Everything</b></label></div>`;
+
+  if (name === "country"){
+    const groups = {};
+    OPTS.country.forEach(c => {
+      const g = REGIONS[c] || "Elsewhere";
+      (groups[g] = groups[g] || []).push(c);
+    });
+    for (const g of Object.keys(groups).sort())
+      html += `<div class="grp">${esc(g)}
+          <button class="ghost" onclick="pickGroup('${esc(g)}')">all</button>
+        </div>` + groups[g].map(box).join("");
+  } else {
+    html += OPTS[name].map(box).join("");
+  }
+  pop.innerHTML = html;
+}
+
+function pick(name, el){
+  el.checked ? PICK[name].add(el.value) : PICK[name].delete(el.value);
+  labelFor(name); drawPanel(name); draw();
+}
+function clearPick(name){ PICK[name].clear(); labelFor(name); drawPanel(name); draw(); }
+function pickGroup(g){
+  const inGroup = OPTS.country.filter(c => (REGIONS[c] || "Elsewhere") === g);
+  const allOn = inGroup.every(c => PICK.country.has(c));
+  inGroup.forEach(c => allOn ? PICK.country.delete(c) : PICK.country.add(c));
+  labelFor("country"); drawPanel("country"); draw();
+}
+function labelFor(name){
+  const n = PICK[name].size;
+  const base = name === "country" ? "countries" : "kinds";
+  document.getElementById("b_" + name).textContent =
+    n === 0 ? "All " + base
+            : (n === 1 ? [...PICK[name]][0] : n + " " + base + " selected");
+}
 
 function draw(){
   const q = $("q").value.toLowerCase().trim();
-  const c = $("country").value, p = $("prio").value, w = $("when").value;
-  const ch = $("checked").value;
+  const w = $("when").value, ch = $("checked").value;
   view = ROWS.filter(r =>
-    (!c || r[3] === c) && (!p || r[0] === p) && (!w || r[7] === w) &&
-    (!ch || r[9] === ch) &&
+    (PICK.country.size === 0 || PICK.country.has(r[3])) &&
+    (PICK.kind.size === 0 || PICK.kind.has(r[0])) &&
+    (!w || r[7] === w) && (!ch || r[9] === ch) &&
     (!q || (r[1] + " " + r[4] + " " + r[2]).toLowerCase().includes(q)));
   if (sortK !== null)
     view = [...view].sort((a,b) =>
@@ -322,7 +420,7 @@ function draw(){
   $("clearsel").hidden = PICKED.size === 0;
 }
 
-["q","country","prio","when","checked"].forEach(id =>
+["q","when","checked"].forEach(id =>
   $(id).addEventListener("input", draw));
 
 // one listener for every row box, now and after every redraw
@@ -396,6 +494,7 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     html = (TEMPLATE
             .replace("__DATA__", json.dumps(rows, ensure_ascii=False))
+            .replace("__REGIONS__", json.dumps(REGION))
             .replace("__DATE__", data_date([r[9] for r in rows]))
             .replace("__N__", f"{len(rows):,}")
             .replace("__UPCOMING__", str(sum(1 for r in rows if r[7] == "Upcoming")))
