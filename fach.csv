@@ -56,13 +56,13 @@ Gilda,Rigoletto,Verdi,Lyrischer Koloratursopran,Soprano
 Duca di Mantova,Rigoletto,Verdi,Lyrischer Tenor,Tenor
 Sparafucile,Rigoletto,Verdi,Serioeser Bass,Bass
 Maddalena,Rigoletto,Verdi,Dramatischer Mezzosopran,Mezzo
-Manrico,Il trovatore,Verdi,Heldentenor,Tenor
+Manrico,Il trovatore,Verdi,Jugendlicher Heldentenor,Tenor
 Leonora,Il trovatore,Verdi,Jugendlich-dramatischer Sopran,Soprano
 Conte di Luna,Il trovatore,Verdi,Verdi-Bariton,Baritone
 Azucena,Il trovatore,Verdi,Dramatischer Mezzosopran,Mezzo
 Ferrando,Il trovatore,Verdi,Serioeser Bass,Bass
 Aida,Aida,Verdi,Dramatischer Sopran,Soprano
-Radames,Aida,Verdi,Heldentenor,Tenor
+Radames,Aida,Verdi,Jugendlicher Heldentenor,Tenor
 Amneris,Aida,Verdi,Dramatischer Mezzosopran,Mezzo
 Amonasro,Aida,Verdi,Verdi-Bariton,Baritone
 Ramfis,Aida,Verdi,Serioeser Bass,Bass
@@ -78,7 +78,7 @@ Fenton,Falstaff,Verdi,Lyrischer Tenor,Tenor
 Ford,Falstaff,Verdi,Kavalierbariton,Baritone
 Mistress Quickly,Falstaff,Verdi,Dramatischer Alt,Contralto
 Meg Page,Falstaff,Verdi,Mezzosopran,Mezzo
-Don Carlo,Don Carlo,Verdi,Heldentenor,Tenor
+Don Carlo,Don Carlo,Verdi,Jugendlicher Heldentenor,Tenor
 Elisabetta di Valois,Don Carlo,Verdi,Jugendlich-dramatischer Sopran,Soprano
 Rodrigo,Don Carlo,Verdi,Verdi-Bariton,Baritone
 Filippo II,Don Carlo,Verdi,Serioeser Bass,Bass
@@ -87,30 +87,30 @@ Grande Inquisitore,Don Carlo,Verdi,Serioeser Bass,Bass
 Macbeth,Macbeth,Verdi,Verdi-Bariton,Baritone
 Lady Macbeth,Macbeth,Verdi,Dramatischer Sopran,Soprano
 Banco,Macbeth,Verdi,Serioeser Bass,Bass
-Macduff,Macbeth,Verdi,Heldentenor,Tenor
+Macduff,Macbeth,Verdi,Jugendlicher Heldentenor,Tenor
 Simon Boccanegra,Simon Boccanegra,Verdi,Verdi-Bariton,Baritone
 Amelia Grimaldi,Simon Boccanegra,Verdi,Lyrischer Sopran,Soprano
 Jacopo Fiesco,Simon Boccanegra,Verdi,Serioeser Bass,Bass
-Gabriele Adorno,Simon Boccanegra,Verdi,Heldentenor,Tenor
+Gabriele Adorno,Simon Boccanegra,Verdi,Jugendlicher Heldentenor,Tenor
 Nabucco,Nabucco,Verdi,Verdi-Bariton,Baritone
 Abigaille,Nabucco,Verdi,Dramatischer Sopran,Soprano
 Zaccaria,Nabucco,Verdi,Serioeser Bass,Bass
 Fenena,Nabucco,Verdi,Mezzosopran,Mezzo
-Ismaele,Nabucco,Verdi,Heldentenor,Tenor
-Riccardo,Un ballo in maschera,Verdi,Heldentenor,Tenor
+Ismaele,Nabucco,Verdi,Jugendlicher Heldentenor,Tenor
+Riccardo,Un ballo in maschera,Verdi,Jugendlicher Heldentenor,Tenor
 Amelia,Un ballo in maschera,Verdi,Dramatischer Sopran,Soprano
 Renato,Un ballo in maschera,Verdi,Verdi-Bariton,Baritone
 Ulrica,Un ballo in maschera,Verdi,Dramatischer Alt,Contralto
 Oscar,Un ballo in maschera,Verdi,Koloratursopran / Soubrette,Soprano
 Leonora,La forza del destino,Verdi,Dramatischer Sopran,Soprano
-Don Alvaro,La forza del destino,Verdi,Heldentenor,Tenor
+Don Alvaro,La forza del destino,Verdi,Jugendlicher Heldentenor,Tenor
 Don Carlo di Vargas,La forza del destino,Verdi,Verdi-Bariton,Baritone
 Preziosilla,La forza del destino,Verdi,Mezzosopran,Mezzo
 Padre Guardiano,La forza del destino,Verdi,Serioeser Bass,Bass
 Fra Melitone,La forza del destino,Verdi,Spielbass,Bass
 Luisa Miller,Luisa Miller,Verdi,Lyrischer Sopran,Soprano
 Mimi,La boheme,Puccini,Lyrischer Sopran,Soprano
-Rodolfo,La boheme,Puccini,Lyrischer Tenor,Tenor
+Rodolfo,La boheme,Puccini,Jugendlicher Heldentenor,Tenor
 Musetta,La boheme,Puccini,Lyrischer Sopran / Soubrette,Soprano
 Marcello,La boheme,Puccini,Lyrischer Bariton,Baritone
 Schaunard,La boheme,Puccini,Lyrischer Bariton,Baritone
@@ -129,14 +129,14 @@ Sharpless,Madama Butterfly,Puccini,Kavalierbariton,Baritone
 Suzuki,Madama Butterfly,Puccini,Mezzosopran,Mezzo
 Goro,Madama Butterfly,Puccini,Spieltenor,Tenor
 Turandot,Turandot,Puccini,Hochdramatischer Sopran,Soprano
-Calaf,Turandot,Puccini,Heldentenor,Tenor
+Calaf,Turandot,Puccini,Jugendlicher Heldentenor,Tenor
 Liu,Turandot,Puccini,Lyrischer Sopran,Soprano
 Timur,Turandot,Puccini,Serioeser Bass,Bass
 Ping,Turandot,Puccini,Lyrischer Bariton,Baritone
 Manon Lescaut,Manon Lescaut,Puccini,Jugendlich-dramatischer Sopran,Soprano
 Des Grieux,Manon Lescaut,Puccini,Jugendlicher Heldentenor,Tenor
 Minnie,La fanciulla del West,Puccini,Dramatischer Sopran,Soprano
-Dick Johnson,La fanciulla del West,Puccini,Heldentenor,Tenor
+Dick Johnson,La fanciulla del West,Puccini,Jugendlicher Heldentenor,Tenor
 Jack Rance,La fanciulla del West,Puccini,Verdi-Bariton,Baritone
 Angelica,Suor Angelica,Puccini,Lyrischer Sopran,Soprano
 La Zia Principessa,Suor Angelica,Puccini,Dramatischer Alt,Contralto
@@ -157,7 +157,7 @@ Isabella,L'italiana in Algeri,Rossini,Koloraturmezzosopran,Mezzo
 Mustafa,L'italiana in Algeri,Rossini,Bassbuffo,Bass
 Lindoro,L'italiana in Algeri,Rossini,Rossini-Tenor,Tenor
 Guillaume Tell,Guillaume Tell,Rossini,Verdi-Bariton,Baritone
-Arnold,Guillaume Tell,Rossini,Heldentenor,Tenor
+Arnold,Guillaume Tell,Rossini,Lyrischer Tenor,Tenor
 Lucia,Lucia di Lammermoor,Donizetti,Lyrischer Koloratursopran,Soprano
 Edgardo,Lucia di Lammermoor,Donizetti,Lyrischer Tenor,Tenor
 Enrico Ashton,Lucia di Lammermoor,Donizetti,Kavalierbariton,Baritone
@@ -192,10 +192,10 @@ Mercedes,Carmen,Bizet,Mezzosopran,Mezzo
 Zurga,Les pecheurs de perles,Bizet,Lyrischer Bariton,Baritone
 Nadir,Les pecheurs de perles,Bizet,Lyrischer Tenor,Tenor
 Leila,Les pecheurs de perles,Bizet,Lyrischer Koloratursopran,Soprano
-Faust,Faust,Gounod,Lyrischer Tenor,Tenor
+Faust,Faust,Gounod,Jugendlicher Heldentenor,Tenor
 Marguerite,Faust,Gounod,Lyrischer Sopran,Soprano
 Mephistopheles,Faust,Gounod,Serioeser Bass,Bass
-Valentin,Faust,Gounod,Lyrischer Bariton,Baritone
+Valentin,Faust,Gounod,Kavalierbariton,Baritone
 Siebel,Faust,Gounod,Lyrischer Mezzosopran,Mezzo
 Romeo,Romeo et Juliette,Gounod,Lyrischer Tenor,Tenor
 Juliette,Romeo et Juliette,Gounod,Lyrischer Koloratursopran,Soprano
@@ -239,15 +239,15 @@ Tannhaeuser,Tannhaeuser,Wagner,Heldentenor,Tenor
 Elisabeth,Tannhaeuser,Wagner,Jugendlich-dramatischer Sopran,Soprano
 Wolfram,Tannhaeuser,Wagner,Kavalierbariton,Baritone
 Venus,Tannhaeuser,Wagner,Dramatischer Mezzosopran,Mezzo
-Lohengrin,Lohengrin,Wagner,Heldentenor,Tenor
+Lohengrin,Lohengrin,Wagner,Jugendlicher Heldentenor,Tenor
 Elsa,Lohengrin,Wagner,Jugendlich-dramatischer Sopran,Soprano
 Ortrud,Lohengrin,Wagner,Hochdramatischer Sopran / dramatischer Mezzo,Mezzo
 Telramund,Lohengrin,Wagner,Heldenbariton,Baritone
 Hollaender,Der fliegende Hollaender,Wagner,Heldenbariton,Baritone
 Senta,Der fliegende Hollaender,Wagner,Jugendlich-dramatischer Sopran,Soprano
 Daland,Der fliegende Hollaender,Wagner,Serioeser Bass,Bass
-Erik,Der fliegende Hollaender,Wagner,Heldentenor,Tenor
-Parsifal,Parsifal,Wagner,Heldentenor,Tenor
+Erik,Der fliegende Hollaender,Wagner,Jugendlicher Heldentenor,Tenor
+Parsifal,Parsifal,Wagner,Jugendlicher Heldentenor,Tenor
 Kundry,Parsifal,Wagner,Dramatischer Sopran,Soprano
 Gurnemanz,Parsifal,Wagner,Serioeser Bass,Bass
 Amfortas,Parsifal,Wagner,Heldenbariton,Baritone
@@ -290,16 +290,16 @@ Rocco,Fidelio,Beethoven,Serioeser Bass,Bass
 Pizarro,Fidelio,Beethoven,Heldenbariton,Baritone
 Marzelline,Fidelio,Beethoven,Soubrette / lyrischer Sopran,Soprano
 Jaquino,Fidelio,Beethoven,Spieltenor,Tenor
-Max,Der Freischuetz,Weber,Heldentenor,Tenor
+Max,Der Freischuetz,Weber,Jugendlicher Heldentenor,Tenor
 Agathe,Der Freischuetz,Weber,Jugendlich-dramatischer Sopran,Soprano
 Aennchen,Der Freischuetz,Weber,Soubrette,Soprano
 Kaspar,Der Freischuetz,Weber,Serioeser Bass,Bass
-Canio,Pagliacci,Leoncavallo,Heldentenor,Tenor
+Canio,Pagliacci,Leoncavallo,Jugendlicher Heldentenor,Tenor
 Nedda,Pagliacci,Leoncavallo,Lyrischer Sopran,Soprano
 Tonio,Pagliacci,Leoncavallo,Verdi-Bariton,Baritone
 Silvio,Pagliacci,Leoncavallo,Lyrischer Bariton,Baritone
 Santuzza,Cavalleria rusticana,Mascagni,Dramatischer Sopran / Mezzo,Soprano
-Turiddu,Cavalleria rusticana,Mascagni,Heldentenor,Tenor
+Turiddu,Cavalleria rusticana,Mascagni,Jugendlicher Heldentenor,Tenor
 Alfio,Cavalleria rusticana,Mascagni,Verdi-Bariton,Baritone
 Lucia,Cavalleria rusticana,Mascagni,Dramatischer Alt,Contralto
 Tatjana,Eugen Onegin,Tchaikovsky,Lyrischer Sopran,Soprano
@@ -348,13 +348,13 @@ Aeneas,Dido and Aeneas,Purcell,Lyrischer Bariton,Baritone
 Wozzeck,Wozzeck,Berg,Charakterbariton,Baritone
 Marie,Wozzeck,Berg,Dramatischer Sopran,Soprano
 Lulu,Lulu,Berg,Koloratursopran,Soprano
-Tom Rakewell,The Rake's Progress,Stravinsky,Heldentenor,Tenor
+Tom Rakewell,The Rake's Progress,Stravinsky,Jugendlicher Heldentenor,Tenor
 Anne Trulove,The Rake's Progress,Stravinsky,Lyrischer Sopran,Soprano
 Nick Shadow,The Rake's Progress,Stravinsky,Lyrischer Bariton,Baritone
 Porgy,Porgy and Bess,Gershwin,Bass-Bariton,Bass-baritone
 Bess,Porgy and Bess,Gershwin,Lyrischer Sopran,Soprano
 Malcolm,Macbeth,Verdi,Lyrischer Tenor,Tenor
-Rodolfo,Luisa Miller,Verdi,Heldentenor,Tenor
+Rodolfo,Luisa Miller,Verdi,Jugendlicher Heldentenor,Tenor
 Percy,Anna Bolena,Donizetti,Lyrischer Tenor,Tenor
 Quint,The Turn of the Screw,Britten,Lyrischer Tenor,Tenor
 Lysander,A Midsummer Night's Dream,Britten,Lyrischer Tenor,Tenor
@@ -369,7 +369,7 @@ Guillot,Manon,Massenet,Charaktertenor,Tenor
 Hauptmann,Wozzeck,Berg,Charaktertenor,Tenor
 Robespierre,Dantons Tod,von Einem,Charaktertenor,Tenor
 Novagerio,Palestrina,Pfitzner,Charaktertenor,Tenor
-Narraboth,Salome,Strauss,Heldentenor,Tenor
+Narraboth,Salome,Strauss,Jugendlicher Heldentenor,Tenor
 Chou En-lai,Nixon in China,Adams,Lyrischer Bariton,Baritone
 Mao Tse-tung,Nixon in China,Adams,Charaktertenor,Tenor
 Genevieve,Pelleas et Melisande,Debussy,Tiefer Alt,Contralto
@@ -382,3 +382,18 @@ Tamerlano,Tamerlano,Handel,Countertenor,Countertenor
 Echnaton,Akhnaten,Glass,Countertenor,Countertenor
 Hippolyte,Hippolyte et Aricie,Rameau,Haute-Contre,Tenor
 Platee,Platee,Rameau,Haute-Contre,Tenor
+Aeneas,Les Troyens,Berlioz,Heldentenor,Tenor
+Eleazar,La Juive,Halevy,Heldentenor,Tenor
+Paul,Die tote Stadt,Korngold,Heldentenor,Tenor
+Schujskij,Boris Godunow,Mussorgsky,Heldentenor,Tenor
+Ernani,Ernani,Verdi,Jugendlicher Heldentenor,Tenor
+Foresto,Attila,Verdi,Jugendlicher Heldentenor,Tenor
+Jacopo Foscari,I due Foscari,Verdi,Jugendlicher Heldentenor,Tenor
+Arrigo,I vespri siciliani,Verdi,Jugendlicher Heldentenor,Tenor
+Adolar,Euryanthe,Weber,Jugendlicher Heldentenor,Tenor
+Huon,Oberon,Weber,Jugendlicher Heldentenor,Tenor
+Rudolph,Guillaume Tell,Rossini,Charaktertenor,Tenor
+Momus,Platee,Rameau,Charaktertenor,Tenor
+Spalanzani,Les contes d'Hoffmann,Offenbach,Charaktertenor,Tenor
+Demetrius,A Midsummer Night's Dream,Britten,Lyrischer Bariton,Baritone
+Claudio,Beatrice et Benedict,Berlioz,Lyrischer Bariton,Baritone
