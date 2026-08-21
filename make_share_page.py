@@ -60,22 +60,23 @@ def tidy(text):
     return text
 
 
-def data_date():
-    """When the results were actually gathered - NOT when this page was built.
+def data_date(rows_dates):
+    """When the listings were actually gathered.
 
-    The two results files are scraped on different days (the curated list is
-    quick, the full sweep is not), so show the real span rather than implying
-    everything was checked on the freshest day.
+    NOT the file's timestamp: the scraper resumes from a cache, so a file
+    rewritten today can be almost entirely made of results fetched weeks ago.
+    Each row records its own check date, so use those.
     """
-    stamps = sorted({date.fromtimestamp(os.path.getmtime(os.path.join(HERE, n)))
-                     for n in JOB_FILES if os.path.exists(os.path.join(HERE, n))})
+    stamps = sorted({d for d in rows_dates if d})
     if not stamps:
         return date.today().strftime("%d %B %Y")
-    if len(stamps) == 1 or stamps[0] == stamps[-1]:
-        return stamps[-1].strftime("%d %B %Y")
-    if stamps[0].month == stamps[-1].month:
-        return f"{stamps[0].day}\u2013{stamps[-1].strftime('%d %B %Y')}"
-    return f"{stamps[0].strftime('%d %b')}\u2013{stamps[-1].strftime('%d %b %Y')}"
+    first = date.fromisoformat(stamps[0])
+    last = date.fromisoformat(stamps[-1])
+    if first == last:
+        return last.strftime("%d %B %Y")
+    if first.month == last.month and first.year == last.year:
+        return f"{first.day}\u2013{last.strftime('%d %B %Y')}"
+    return f"{first.strftime('%d %b')}\u2013{last.strftime('%d %b %Y')}"
 
 
 def load():
@@ -116,7 +117,7 @@ def load():
                     COUNTRY.get(r.get("Country", "").upper(),
                                 r.get("Country", "")), role,
                     r.get("Deadline found", ""), posted.split(" (")[0], fresh,
-                    r.get("Link", ""),
+                    r.get("Link", ""), r.get("Date checked", ""),
                 ])
     rows.sort(key=lambda r: (r[7] != "Upcoming", r[3], r[1]))
     return rows
@@ -335,7 +336,7 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     html = (TEMPLATE
             .replace("__DATA__", json.dumps(rows, ensure_ascii=False))
-            .replace("__DATE__", data_date())
+            .replace("__DATE__", data_date([r[9] for r in rows]))
             .replace("__N__", f"{len(rows):,}")
             .replace("__UPCOMING__", str(sum(1 for r in rows if r[7] == "Upcoming")))
             .replace("__COUNTRIES__", str(len({r[3] for r in rows if r[3]})))
