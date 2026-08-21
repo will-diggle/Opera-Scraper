@@ -60,6 +60,24 @@ def tidy(text):
     return text
 
 
+def data_date():
+    """When the results were actually gathered - NOT when this page was built.
+
+    The two results files are scraped on different days (the curated list is
+    quick, the full sweep is not), so show the real span rather than implying
+    everything was checked on the freshest day.
+    """
+    stamps = sorted({date.fromtimestamp(os.path.getmtime(os.path.join(HERE, n)))
+                     for n in JOB_FILES if os.path.exists(os.path.join(HERE, n))})
+    if not stamps:
+        return date.today().strftime("%d %B %Y")
+    if len(stamps) == 1 or stamps[0] == stamps[-1]:
+        return stamps[-1].strftime("%d %B %Y")
+    if stamps[0].month == stamps[-1].month:
+        return f"{stamps[0].day}\u2013{stamps[-1].strftime('%d %B %Y')}"
+    return f"{stamps[0].strftime('%d %b')}\u2013{stamps[-1].strftime('%d %b %Y')}"
+
+
 def load():
     meta = {}
     tpath = os.path.join(HERE, "targets.csv")
@@ -178,7 +196,7 @@ footer p{max-width:70ch}
 </style>
 
 <div class="masthead">
-  <div class="eyebrow">Snapshot &middot; __DATE__</div>
+  <div class="eyebrow">Websites last checked &middot; __DATE__</div>
   <h1>Opera Audition Watch</h1>
   <p class="sub">Singer openings gathered from opera house, festival and
      professional choir websites across Europe. Every row links to the
@@ -317,7 +335,7 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     html = (TEMPLATE
             .replace("__DATA__", json.dumps(rows, ensure_ascii=False))
-            .replace("__DATE__", date.today().strftime("%d %B %Y"))
+            .replace("__DATE__", data_date())
             .replace("__N__", f"{len(rows):,}")
             .replace("__UPCOMING__", str(sum(1 for r in rows if r[7] == "Upcoming")))
             .replace("__COUNTRIES__", str(len({r[3] for r in rows if r[3]})))
