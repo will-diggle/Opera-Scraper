@@ -11,6 +11,7 @@ Stop it with:    Ctrl-C in the terminal
 """
 
 import csv
+import io
 import os
 import subprocess
 import sys
@@ -21,6 +22,9 @@ from flask import (Flask, jsonify, render_template_string, request,
                    send_file)
 
 import tracker
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 from freshness import assess
 from stage5_prioritise import categorise
@@ -114,59 +118,70 @@ def load_jobs():
 PAGE = """
 <!doctype html><meta charset="utf-8"><title>Opera Jobs</title>
 <style>
- :root{--bg:#f7f8fa;--ink:#1c1c1c;--line:#d3d8e0;--accent:#1b2a4e;--soft:#6b6b6b}
+ :root{--bg:#faf9f5;--panel:#ffffff;--ink:#1f1e1b;--line:#e6e3db;
+        --accent:#3b3833;--soft:#736f66;--tint:#f0eee7}
  *{box-sizing:border-box}
  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:var(--bg);color:var(--ink)}
- header{background:var(--accent);color:#fff;padding:18px 24px}
- header h1{margin:0;font-size:20px;font-weight:600}
- header p{margin:4px 0 0;opacity:.85;font-size:13px}
+      background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+ header{background:transparent;color:var(--ink);padding:34px 24px 20px;
+        max-width:1500px;border-bottom:1px solid var(--line)}
+ header .eyebrow{font:600 11px/1 -apple-system,sans-serif;letter-spacing:.16em;
+        text-transform:uppercase;color:var(--soft)}
+ header h1{margin:12px 0 0;font:400 34px/1.1 "Iowan Old Style",
+        "Palatino Linotype",Palatino,Georgia,serif;letter-spacing:-.01em}
+ header p{margin:10px 0 0;color:var(--soft);font-size:14.5px;max-width:64ch}
  .wrap{padding:20px 24px;max-width:1500px}
- .panel{background:#fff;border:1px solid var(--line);border-radius:8px;
-        padding:16px;margin-bottom:18px}
- button{font:inherit;padding:9px 14px;border-radius:6px;border:1px solid var(--accent);
-        background:var(--accent);color:#fff;cursor:pointer;margin:3px 4px 3px 0}
- button.ghost{background:#fff;color:var(--accent)}
+ .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:18px;margin-bottom:16px}
+ button{font:inherit;padding:8px 14px;border-radius:9px;border:1px solid var(--accent);
+        background:var(--accent);color:#fdfdfb;cursor:pointer;margin:3px 4px 3px 0}
+ button.ghost{background:transparent;color:var(--accent);border-color:var(--line)}
+ button.ghost:hover{background:var(--tint)}
  button:disabled{opacity:.45;cursor:not-allowed}
- input,select{font:inherit;padding:8px;border:1px solid var(--line);
-              border-radius:6px;background:#fff}
+ input,select{font:inherit;padding:8px 10px;border:1px solid var(--line);
+              border-radius:9px;background:var(--panel);color:var(--ink)}
  input[type=search]{width:320px}
- table{border-collapse:collapse;width:100%;background:#fff;font-size:13.5px}
+ table{border-collapse:collapse;width:100%;background:var(--panel);
+       font-size:13.5px;border:1px solid var(--line);border-radius:12px}
  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
        vertical-align:top}
- th{background:#e8ecf3;position:sticky;top:0;cursor:pointer;white-space:nowrap}
- tr:hover td{background:#f4f7fc}
+ th{background:var(--tint);position:sticky;top:0;cursor:pointer;
+       white-space:nowrap;font:600 11px/1 -apple-system,sans-serif;
+       letter-spacing:.09em;text-transform:uppercase;color:var(--soft);
+       padding:11px 10px}
+ tr:hover td{background:var(--bg)}
  a{color:var(--accent)}
- .tag{font-size:11px;padding:2px 7px;border-radius:99px;background:#eee;
+ .tag{font-size:11px;padding:2px 7px;border-radius:99px;background:var(--tint);
       white-space:nowrap}
- .Singer{background:#d6e4f5}.Unclear{background:#eceff4}
- .log{background:#1c1c1c;color:#d6d6d6;font:12px/1.45 ui-monospace,Menlo,monospace;
-      padding:12px;border-radius:6px;height:190px;overflow:auto;white-space:pre-wrap}
+ .Singer{background:#e4e0d6}.Unclear{background:var(--tint)}
+ .log{background:#2a2823;color:#e8e4da;font:12px/1.45 ui-monospace,Menlo,monospace;
+      padding:12px;border-radius:10px;height:190px;overflow:auto;white-space:pre-wrap}
  .muted{color:var(--soft);font-size:13px}
  .multi{position:relative;display:inline-block}
- .pop{display:none;position:absolute;z-index:20;top:105%;left:0;background:#fff;
-      border:1px solid var(--line);border-radius:8px;padding:8px;min-width:230px;
+ .pop{display:none;position:absolute;z-index:20;top:105%;left:0;background:var(--panel);
+      border:1px solid var(--line);border-radius:12px;padding:8px;min-width:230px;
       max-height:280px;overflow:auto;box-shadow:0 6px 20px rgba(0,0,0,.13)}
  .pop.open{display:block}
  .pop label{display:block;padding:3px 4px;font-size:13.5px;cursor:pointer;
             white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- .pop label:hover{background:#eef2f8}
+ .pop label:hover{background:#f0ece6}
  .pop input{margin-right:7px}
- .pop .tools{display:flex;gap:6px;margin-bottom:6px;position:sticky;top:0;background:#fff}
+ .pop .tools{display:flex;gap:6px;margin-bottom:6px;position:sticky;top:0;background:var(--panel)}
  .pop .tools input[type=search]{width:100%;padding:5px}
- button.star{padding:3px 8px;font-size:15px;line-height:1;border-color:var(--line)}
- button.star.on{background:#fff;color:#c8a415;border-color:#c8a415}
+ td.pick,th.pick{width:34px;text-align:center}
+ td.pick input{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
  td.tick{text-align:center}
  td.tick input{width:16px;height:16px;accent-color:#1d6b4f}
- tr.done td{background:#eaf6ec}
- .notes{width:100%;border:1px solid var(--line);border-radius:5px;padding:5px;
+ tr.done td{background:#eef4ec}
+ .notes{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px;
         font:inherit;font-size:13px}
- .fresh-Outofdate{color:#a33}.fresh-Recent{color:#2a7}.fresh-Upcoming{color:#1b2a4e;font-weight:600}
+ .fresh-Outofdate{color:#a33}.fresh-Recent{color:#2a7}.fresh-Upcoming{color:#7a5c1e;font-weight:600}
 </style>
 <header>
+  <div class="eyebrow">Local &middot; runs on this Mac</div>
   <h1>Opera Jobs</h1>
   <p>Auditions, chorus vacancies and young artist programmes, gathered from
-     company websites.</p>
+     company websites. Tick anything worth chasing to build your shortlist.</p>
 </header>
 <div class="wrap">
 
@@ -214,7 +229,7 @@ PAGE = """
   <label class="muted" style="margin-left:8px">
     <input type="checkbox" id="deadline" onchange="render()"> has a deadline
   </label>
-  <button onclick="exportCsv()" style="float:right">Export CSV</button>
+  <button onclick="exportExcel()" style="float:right">Export to Excel</button>
   <button class="ghost" onclick="clearFilters()" style="float:right">Clear filters</button>
   <span id="count" class="muted" style="margin-left:10px"></span>
 </div>
@@ -230,7 +245,7 @@ PAGE = """
 
 <table id="tbl">
   <thead><tr>
-    <th></th>
+    <th class="pick" title="Tick to add to your shortlist">Save</th>
     <th onclick="sortBy('Priority')">Priority</th>
     <th onclick="sortBy('Company')">Company</th>
     <th onclick="sortBy('Country')">Country</th>
@@ -401,9 +416,9 @@ function render() {
 
   document.querySelector("#tbl tbody").innerHTML = rows.map(r => `
     <tr>
-      <td><button class="ghost star ${SAVED.has(rid(r))?"on":""}"
-            onclick='toggleSave(${JSON.stringify(JSON.stringify(r))})'
-            title="Add to my shortlist">${SAVED.has(rid(r))?"★":"☆"}</button></td>
+      <td class="pick"><input type="checkbox" ${SAVED.has(rid(r))?"checked":""}
+            onchange='toggleSave(${JSON.stringify(JSON.stringify(r))})'
+            title="Add to my shortlist"></td>
       <td><span class="tag">${esc((r.Priority||"").replace(/ - /," "))}</span></td>
       <td>${esc(r.Company)}${r.City ? '<div class="muted">'+esc(r.City)+'</div>' : ''}</td>
       <td>${esc(r.Country)}</td>
@@ -421,18 +436,16 @@ function render() {
   document.getElementById("count").textContent =
     rows.length + " of " + ROWS.length + " rows";
 }
-function exportCsv() {
-  const cols = ["Priority","Company","City","Country","Role / posting","Type",
-                "Deadline found","Posted","Freshness","Date checked","Link",
-                "Social accounts","Found on page","Status","Notes"];
-  const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
-  const csv = [cols.join(",")]
-    .concat(SHOWN.map(r => cols.map(c => q(r[c])).join(","))).join("\\n");
-  const stamp = new Date().toISOString().slice(0,10);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["\\ufeff" + csv], {type:"text/csv"}));
-  a.download = `opera-jobs-${stamp}.csv`;
-  document.body.appendChild(a); a.click(); a.remove();
+function exportExcel() {
+  const rows = SHOWN.map(r => ({...r}));
+  fetch("/api/export/excel", {method:"POST",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify(rows)})
+    .then(r => r.blob()).then(b => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = "opera-jobs.xlsx";
+      document.body.appendChild(a); a.click(); a.remove();
+    });
 }
 function sortBy(k){ sortDir = (k === sortKey) ? -sortDir : 1; sortKey = k; render(); }
 
@@ -462,6 +475,36 @@ function poll() {
 poll();
 </script>
 """
+
+
+@app.route("/api/export/excel", methods=["POST"])
+def api_export_excel():
+    """Export exactly the rows the user is looking at, as a real .xlsx."""
+    rows = request.get_json(force=True) or []
+    cols = ["Priority", "Company", "City", "Country", "Role / posting", "Type",
+            "Deadline found", "Posted", "Freshness", "Date checked", "Link",
+            "Social accounts", "Found on page"]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Findings"
+    ws.append(cols)
+    for r in rows:
+        ws.append([r.get(c, "") for c in cols])
+    for i, w in enumerate([24, 28, 15, 9, 56, 12, 16, 13, 14, 13, 46, 40, 40],
+                          start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="3B3833")
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(cols))}{max(ws.max_row, 2)}"
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf, as_attachment=True, download_name="opera-jobs.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument."
+                 "spreadsheetml.sheet")
 
 
 @app.route("/api/saved")

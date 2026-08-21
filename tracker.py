@@ -5,11 +5,11 @@ Everything else in this project is a firehose the scrapers refill. This file is
 yours - what you saved, whether you have applied, whether you have emailed, and
 your own notes. Nothing here is ever overwritten by a scrape.
 
-Stored in saved_jobs.csv so you can open it anywhere; exported to
-saved_jobs.xlsx with tick-box columns that turn green.
+Kept in saved_jobs.json for the app's own use; the file you actually open is
+saved_jobs.xlsx, with Yes-No columns that turn green.
 """
 
-import csv
+import json
 import os
 from datetime import date
 
@@ -20,7 +20,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-STORE = os.path.join(HERE, "saved_jobs.csv")
+STORE = os.path.join(HERE, "saved_jobs.json")
 XLSX = os.path.join(HERE, "saved_jobs.xlsx")
 
 FIELDS = ["id", "Company", "Country", "City", "Role", "Voice type",
@@ -40,16 +40,17 @@ def row_id(row):
 def load():
     if not os.path.exists(STORE):
         return []
-    with open(STORE, newline="", encoding="utf-8") as fh:
-        return [dict(r) for r in csv.DictReader(fh)]
+    try:
+        with open(STORE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (json.JSONDecodeError, OSError):
+        return []
 
 
 def save_all(rows):
-    with open(STORE, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=FIELDS, extrasaction="ignore")
-        w.writeheader()
-        for r in rows:
-            w.writerow({k: r.get(k, "") for k in FIELDS})
+    with open(STORE, "w", encoding="utf-8") as fh:
+        json.dump([{k: r.get(k, "") for k in FIELDS} for r in rows],
+                  fh, ensure_ascii=False, indent=1)
 
 
 def add(row):
@@ -119,7 +120,7 @@ def export_xlsx():
         ws.column_dimensions[get_column_letter(i)].width = w
     for c in ws[1]:
         c.font = Font(bold=True, color="FFFFFF")
-        c.fill = PatternFill("solid", fgColor="1B2A4E")
+        c.fill = PatternFill("solid", fgColor="3B3833")
         c.alignment = Alignment(vertical="center")
     ws.freeze_panes = "A2"
 
