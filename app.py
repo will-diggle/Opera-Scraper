@@ -17,7 +17,10 @@ import sys
 import threading
 from datetime import datetime
 
-from flask import Flask, jsonify, render_template_string, request
+from flask import (Flask, jsonify, render_template_string, request,
+                   send_file)
+
+import tracker
 
 from freshness import assess
 from stage5_prioritise import categorise
@@ -151,6 +154,13 @@ PAGE = """
  .pop input{margin-right:7px}
  .pop .tools{display:flex;gap:6px;margin-bottom:6px;position:sticky;top:0;background:#fff}
  .pop .tools input[type=search]{width:100%;padding:5px}
+ button.star{padding:3px 8px;font-size:15px;line-height:1;border-color:var(--line)}
+ button.star.on{background:#fff;color:#c8a415;border-color:#c8a415}
+ td.tick{text-align:center}
+ td.tick input{width:16px;height:16px;accent-color:#1d6b4f}
+ tr.done td{background:#eaf6ec}
+ .notes{width:100%;border:1px solid var(--line);border-radius:5px;padding:5px;
+        font:inherit;font-size:13px}
  .fresh-Outofdate{color:#a33}.fresh-Recent{color:#2a7}.fresh-Upcoming{color:#1b2a4e;font-weight:600}
 </style>
 <header>
@@ -174,6 +184,14 @@ PAGE = """
 </div>
 
 <div class="panel">
+  <button id="tab_all" onclick="showView('all')">All findings</button>
+  <button id="tab_saved" class="ghost" onclick="showView('saved')">
+    My shortlist (<span id="savedcount">0</span>)</button>
+  <button class="ghost" style="float:right"
+          onclick="location='/api/saved/export'">Export shortlist to Excel</button>
+</div>
+
+<div class="panel" id="filters">
   <input type="search" id="q" placeholder="Search role, company, city…"
          oninput="render()">
   <select id="type" onchange="render()">
@@ -201,8 +219,18 @@ PAGE = """
   <span id="count" class="muted" style="margin-left:10px"></span>
 </div>
 
+<table id="saved_tbl" style="display:none">
+  <thead><tr>
+    <th>Company</th><th>Role</th><th>Voice type</th><th>Deadline</th>
+    <th>Applied</th><th>Emailed</th><th>Replied</th><th>Notes</th>
+    <th>Link</th><th></th>
+  </tr></thead>
+  <tbody></tbody>
+</table>
+
 <table id="tbl">
   <thead><tr>
+    <th></th>
     <th onclick="sortBy('Priority')">Priority</th>
     <th onclick="sortBy('Company')">Company</th>
     <th onclick="sortBy('Country')">Country</th>
@@ -219,6 +247,78 @@ PAGE = """
 
 <script>
 let ROWS = [], SHOWN = [], sortKey = "Company", sortDir = 1;
+let SAVEDROWS = [], VIEW = "all";
+const SAVED = new Set();
+
+function rid(r){
+  return [(r.Company||"").trim().toLowerCase(),
+          (r["Role / posting"]||r.Role||"").trim().toLowerCase().slice(0,60),
+          (r.Link||"").trim().toLowerCase()].join("|");
+}
+
+function loadSaved(){
+  return fetch("/api/saved").then(r => r.json()).then(d => {
+    SAVEDROWS = d;
+    SAVED.clear(); d.forEach(r => SAVED.add(r.id));
+    document.getElementById("savedcount").textContent = d.length;
+    if (VIEW === "saved") drawSaved(); else render();
+  });
+}
+
+function toggleSave(json){
+  const r = JSON.parse(json), id = rid(r);
+  const url = SAVED.has(id) ? "/api/saved/remove" : "/api/saved/add";
+  const body = SAVED.has(id) ? {id} : r;
+  fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
+              body: JSON.stringify(body)}).then(() => loadSaved());
+}
+
+function showView(v){
+  VIEW = v;
+  document.getElementById("tab_all").className = v==="all" ? "" : "ghost";
+  document.getElementById("tab_saved").className = v==="saved" ? "" : "ghost";
+  document.getElementById("filters").style.display = v==="all" ? "" : "none";
+  document.getElementById("tbl").style.display = v==="all" ? "" : "none";
+  document.getElementById("saved_tbl").style.display = v==="saved" ? "" : "none";
+  v === "saved" ? drawSaved() : render();
+}
+
+function setField(id, field, value){
+  fetch("/api/saved/update", {method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({id, field, value})}).then(() => loadSaved());
+}
+
+function drawSaved(){
+  const tb = document.querySelector("#saved_tbl tbody");
+  if (!SAVEDROWS.length){
+    tb.innerHTML = `<tr><td colspan="10" class="muted"
+      style="padding:26px">Nothing saved yet. Click the star beside any
+      finding to add it here.</td></tr>`;
+    return;
+  }
+  const tick = (r, f) => `<td class="tick"><input type="checkbox"
+      ${r[f]==="Yes"?"checked":""}
+      onchange="setField('${r.id.replace(/'/g,"\\'")}','${f}',
+                         this.checked?'Yes':'No')"></td>`;
+  tb.innerHTML = SAVEDROWS.map(r => `
+    <tr class="${r.Applied==="Yes"?"done":""}">
+      <td><b>${esc(r.Company)}</b>${r.City?`<div class="muted">${esc(r.City)}</div>`:""}</td>
+      <td>${esc(r.Role)}</td>
+      <td>${esc(r["Voice type"]||"")}</td>
+      <td>${esc(r.Deadline||"")}</td>
+      ${tick(r,"Applied")}${tick(r,"Emailed")}${tick(r,"Replied")}
+      <td><input class="notes" value="${esc(r.Notes||"")}"
+           placeholder="date sent, who you wrote to…"
+           onchange="setField('${r.id.replace(/'/g,"\\'")}','Notes',this.value)"></td>
+      <td><a href="${esc(r.Link)}" target="_blank" rel="noopener">open</a></td>
+      <td><button class="ghost" onclick="if(confirm('Remove from shortlist?'))
+            fetch('/api/saved/remove',{method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({id:'${r.id.replace(/'/g,"\\'")}'})})
+            .then(loadSaved)">remove</button></td>
+    </tr>`).join("");
+}
 
 fetch("/api/jobs").then(r => r.json()).then(d => {
   ROWS = d;
@@ -226,6 +326,7 @@ fetch("/api/jobs").then(r => r.json()).then(d => {
   buildMulti("country",  [...new Set(d.map(r => r.Country))].sort());
   buildMulti("company",  [...new Set(d.map(r => r.Company))].sort());
   render();
+  loadSaved();
 });
 
 const SEL = {priority:new Set(), country:new Set(), company:new Set()};
@@ -300,6 +401,9 @@ function render() {
 
   document.querySelector("#tbl tbody").innerHTML = rows.map(r => `
     <tr>
+      <td><button class="ghost star ${SAVED.has(rid(r))?"on":""}"
+            onclick='toggleSave(${JSON.stringify(JSON.stringify(r))})'
+            title="Add to my shortlist">${SAVED.has(rid(r))?"★":"☆"}</button></td>
       <td><span class="tag">${esc((r.Priority||"").replace(/ - /," "))}</span></td>
       <td>${esc(r.Company)}${r.City ? '<div class="muted">'+esc(r.City)+'</div>' : ''}</td>
       <td>${esc(r.Country)}</td>
@@ -358,6 +462,38 @@ function poll() {
 poll();
 </script>
 """
+
+
+@app.route("/api/saved")
+def api_saved():
+    return jsonify(tracker.load())
+
+
+@app.route("/api/saved/add", methods=["POST"])
+def api_saved_add():
+    row = request.get_json(force=True) or {}
+    added = tracker.add(row)
+    return jsonify({"added": added, "id": tracker.row_id(row)})
+
+
+@app.route("/api/saved/remove", methods=["POST"])
+def api_saved_remove():
+    d = request.get_json(force=True) or {}
+    return jsonify({"removed": tracker.remove(d.get("id", ""))})
+
+
+@app.route("/api/saved/update", methods=["POST"])
+def api_saved_update():
+    d = request.get_json(force=True) or {}
+    ok = tracker.update(d.get("id", ""), d.get("field", ""), d.get("value", ""))
+    return jsonify({"ok": ok})
+
+
+@app.route("/api/saved/export")
+def api_saved_export():
+    path, _ = tracker.export_xlsx()
+    return send_file(path, as_attachment=True,
+                     download_name="my-opera-applications.xlsx")
 
 
 @app.route("/")

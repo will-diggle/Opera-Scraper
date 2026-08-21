@@ -16,3 +16,8 @@ jobs_targets.xlsx
 *.log
 companies_backup.csv
 ~$*
+
+saved_jobs.csv
+saved_jobs.xlsx
+uncast_cache.jsonl
+stage7*.log

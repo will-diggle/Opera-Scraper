@@ -201,6 +201,31 @@ def match_fach(role, page_text):
     return hits[0]
 
 
+# Staff directories and orchestra rosters use the same layout as a cast list,
+# so a blank next to a name looks identical to an uncast role. Skip those pages.
+NOT_A_CAST_PAGE = re.compile(
+    r"equipe|\bteam\b|mitarbeiter|personal|kollegium|orchester|orchestra|"
+    r"ensemble-und-team|wer-wir-sind|about-us|ueber-uns|kontakt|impressum|"
+    r"verwaltung|leitung|stiftung|freunde|foerderverein", re.I)
+
+# Instrument names appear in orchestra vacancy lists, which are not for singers.
+INSTRUMENT = re.compile(
+    r"fl[uû]te|floete|hautbois|oboe|clarinette|klarinett|basson|fagott|"
+    r"cor anglais|horn|trompet|tromb|tuba|violon|violine|viola|alto solo|"
+    r"violoncell|cello|contrebasse|kontrabass|harfe|harpe|percussion|"
+    r"schlagzeug|timbales|pauke|klavier|piano|orgel|orgue", re.I)
+
+
+def looks_like_person(text):
+    """'Jean-Charles Masurier' is a name; 'Don Ottavio' is a role we may know."""
+    if norm(text) in FACH:
+        return False
+    words = text.split()
+    if len(words) != 2:
+        return False
+    return all(w[:1].isupper() and w[1:].islower() and len(w) > 2 for w in words)
+
+
 def scan_company(row):
     company = row.get("name", "")
     country = row.get("country", "")
@@ -236,7 +261,14 @@ def scan_company(row):
                 r"|[aà] confirmer|por confirmar", text, re.I):
             continue
         title = production_title(p, p_url)
+        if NOT_A_CAST_PAGE.search(p_url) or NOT_A_CAST_PAGE.search(title):
+            continue
         for role, value in read_cast(p):
+            if INSTRUMENT.search(role) or looks_like_person(role):
+                continue
+            # a bare dash is too weak on its own - only trust it for a known role
+            if value.strip(" .") in {"-", "--", "—", "–"} and norm(role) not in FACH:
+                continue
             f = match_fach(role, text)
             out.append({
                 "Company": company,
@@ -244,10 +276,14 @@ def scan_company(row):
                 "Production": title,
                 "Role": role,
                 "Marked as": value,
-                "Voice type": f.get("fach", ""),
-                "Voice": f.get("voice", ""),
-                "Opera (matched)": f.get("opera", ""),
-                "Composer": f.get("composer", ""),
+                # Kloiber's classification, then the looser international
+                # reading where it differs. N.A. when the role is not in the
+                # table at all - usually a small part or a modern opera.
+                "Voice type": f.get("fach", "") or "N.A.",
+                "Also called": f.get("fach_common", ""),
+                "Voice": f.get("voice", "") or "N.A.",
+                "Opera (matched)": f.get("opera", "") or "N.A.",
+                "Composer": f.get("composer", "") or "N.A.",
                 "Link": p_url,
                 "Found on": date.today().isoformat(),
             })
@@ -264,12 +300,14 @@ def scan_company(row):
     return company, uniq
 
 
-COLS = ["Company", "Country", "Production", "Role", "Voice type", "Voice",
-        "Opera (matched)", "Composer", "Marked as", "Link", "Found on"]
+COLS = ["Company", "Country", "Production", "Role", "Voice type",
+        "Also called", "Voice", "Opera (matched)", "Composer", "Marked as",
+        "Link", "Found on"]
 
 
 def write_out(rows):
-    rows.sort(key=lambda r: (not r["Voice type"], r["Country"], r["Company"]))
+    rows.sort(key=lambda r: (r["Voice type"] == "N.A.", r["Country"],
+                             r["Company"]))
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=COLS, extrasaction="ignore")
         w.writeheader()
@@ -281,7 +319,8 @@ def write_out(rows):
     ws.append(COLS)
     for r in rows:
         ws.append([r.get(c, "") for c in COLS])
-    for i, wdt in enumerate([28, 9, 34, 26, 32, 14, 26, 16, 12, 46, 12], start=1):
+    for i, wdt in enumerate([28, 9, 34, 26, 30, 30, 14, 24, 16, 12, 46, 12],
+                            start=1):
         ws.column_dimensions[get_column_letter(i)].width = wdt
     for c in ws[1]:
         c.font = Font(bold=True)
@@ -330,7 +369,7 @@ def main():
                     log(f"  --- {n}/{len(todo)} companies, {len(rows)} roles ---")
 
     write_out(rows)
-    withfach = sum(1 for r in rows if r["Voice type"])
+    withfach = sum(1 for r in rows if r["Voice type"] != "N.A.")
     log(f"\nDone. {len(rows)} uncast roles ({withfach} matched to a voice type).")
     log(f"Wrote {OUT_CSV} and {OUT_XLSX}")
 
