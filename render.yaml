@@ -1,0 +1,12 @@
+# One-click deploy config for Render (render.com).
+# Connect this repo there and it reads this file - no further setup.
+services:
+  - type: web
+    name: opera-audition-watch
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn public_site:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"

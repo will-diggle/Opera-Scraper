@@ -8,6 +8,7 @@ operabase_details.csv
 operabase_details.jsonl
 targets.csv
 opera_jobs.csv
+!public_data.json
 opera_jobs.xlsx
 opera_jobs_final.xlsx
 jobs_targets.csv
