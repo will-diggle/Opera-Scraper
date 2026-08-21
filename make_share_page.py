@@ -225,6 +225,7 @@ footer p{max-width:70ch}
     <option value="Upcoming">Dated ahead</option>
     <option value="Recent">Posted recently</option>
   </select>
+  <select id="checked"></select>
   <button class="ghost" id="csv">Download CSV</button>
   <span class="count" id="count"></span>
 </div></div>
@@ -235,7 +236,8 @@ footer p{max-width:70ch}
       <thead><tr>
         <th data-k="1">Company</th><th data-k="3">Country</th>
         <th data-k="4">Role</th><th data-k="0">Kind</th>
-        <th data-k="5">Deadline</th><th data-k="6">Posted</th><th>Link</th>
+        <th data-k="5">Deadline</th><th data-k="6">Posted</th>
+        <th data-k="9">Checked</th><th>Link</th>
       </tr></thead>
       <tbody id="body"></tbody>
     </table>
@@ -253,13 +255,17 @@ footer p{max-width:70ch}
 
 <script>
 const COLS = ["Kind","Company","City","Country","Role","Deadline","Posted",
-              "Freshness","Link"];
+              "Freshness","Link","Checked"];
 const ROWS = __DATA__;
 let view = ROWS, sortK = null, sortDir = 1;
 
 const $ = id => document.getElementById(id);
 const esc = s => (s||"").replace(/[&<>"]/g,
   c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const checked = [...new Set(ROWS.map(r => r[9]))].filter(Boolean).sort().reverse();
+$("checked").innerHTML = '<option value="">Checked any time</option>' +
+  checked.map(d => `<option value="${esc(d)}">Checked ${esc(d)}</option>`).join("");
 
 const countries = [...new Set(ROWS.map(r => r[3]))].filter(Boolean).sort();
 $("country").innerHTML = '<option value="">All countries</option>' +
@@ -268,8 +274,10 @@ $("country").innerHTML = '<option value="">All countries</option>' +
 function draw(){
   const q = $("q").value.toLowerCase().trim();
   const c = $("country").value, p = $("prio").value, w = $("when").value;
+  const ch = $("checked").value;
   view = ROWS.filter(r =>
     (!c || r[3] === c) && (!p || r[0] === p) && (!w || r[7] === w) &&
+    (!ch || r[9] === ch) &&
     (!q || (r[1] + " " + r[4] + " " + r[2]).toLowerCase().includes(q)));
   if (sortK !== null)
     view = [...view].sort((a,b) =>
@@ -284,13 +292,14 @@ function draw(){
     <td class="when">${r[5] ? esc(r[5]) : '<span class="q">&mdash;</span>'}</td>
     <td class="when">${r[6] ? `<span class="chip ${r[7]==="Upcoming"?"live":""}">
         ${esc(r[6])}</span>` : '<span class="q">no date</span>'}</td>
+    <td class="when q">${esc(r[9])}</td>
     <td><a href="${esc(r[8])}" target="_blank" rel="noopener">open</a></td>
   </tr>`).join("");
   $("empty").hidden = view.length > 0;
   $("count").textContent = view.length + " of " + ROWS.length;
 }
 
-["q","country","prio","when"].forEach(id =>
+["q","country","prio","when","checked"].forEach(id =>
   $(id).addEventListener("input", draw));
 document.querySelectorAll("th[data-k]").forEach(th =>
   th.addEventListener("click", () => {

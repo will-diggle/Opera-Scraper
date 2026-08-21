@@ -210,6 +210,7 @@ PAGE = """
     <th onclick="sortBy('Type')">Type</th>
     <th onclick="sortBy('Deadline found')">Deadline</th>
     <th onclick="sortBy('Posted')">Posted</th>
+    <th onclick="sortBy('Date checked')">Checked</th>
     <th>Links</th>
   </tr></thead>
   <tbody></tbody>
@@ -307,6 +308,7 @@ function render() {
       <td>${esc(r["Deadline found"])}</td>
       <td>${esc((r.Posted||"").split(" (")[0])}
           <div class="muted fresh-${esc(r.Freshness).replace(/ /g,"")}">${esc(r.Freshness)}</div></td>
+      <td class="muted">${esc(r["Date checked"])}</td>
       <td><a href="${esc(r.Link)}" target="_blank" rel="noopener">open</a>
           ${r["Social accounts"] ? " · " + r["Social accounts"].split(" | ")
              .map(u => `<a href="${esc(u)}" target="_blank" rel="noopener">social</a>`)
@@ -317,8 +319,8 @@ function render() {
 }
 function exportCsv() {
   const cols = ["Priority","Company","City","Country","Role / posting","Type",
-                "Deadline found","Posted","Freshness","Link","Social accounts",
-                "Found on page","Status","Notes"];
+                "Deadline found","Posted","Freshness","Date checked","Link",
+                "Social accounts","Found on page","Status","Notes"];
   const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
   const csv = [cols.join(",")]
     .concat(SHOWN.map(r => cols.map(c => q(r[c])).join(","))).join("\\n");
