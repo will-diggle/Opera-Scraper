@@ -14,10 +14,8 @@ import os
 from datetime import date
 
 from openpyxl import Workbook
-from openpyxl.formatting.rule import FormulaRule
-from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.datavalidation import DataValidation
+
+from excel_style import dress
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STORE = os.path.join(HERE, "saved_jobs.json")
@@ -115,39 +113,8 @@ def export_xlsx():
     for r in rows:
         ws.append([r.get(c, "") for c in cols])
 
-    widths = [26, 10, 15, 42, 26, 14, 46, 11, 10, 10, 10, 40]
-    for i, w in enumerate(widths, start=1):
-        ws.column_dimensions[get_column_letter(i)].width = w
-    for c in ws[1]:
-        c.font = Font(bold=True, color="FFFFFF")
-        c.fill = PatternFill("solid", fgColor="3B3833")
-        c.alignment = Alignment(vertical="center")
-    ws.freeze_panes = "A2"
-
-    last = max(ws.max_row, 2)
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(cols))}{last}"
-
-    # Yes / No dropdowns on the three tick columns
-    first_tick = cols.index("Applied") + 1
-    for offset in range(3):
-        letter = get_column_letter(first_tick + offset)
-        dv = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True)
-        dv.error = "Choose Yes or No"
-        ws.add_data_validation(dv)
-        dv.add(f"{letter}2:{letter}{last}")
-        green = PatternFill("solid", fgColor="C6EFCE")
-        ws.conditional_formatting.add(
-            f"{letter}2:{letter}{last}",
-            FormulaRule(formula=[f'EXACT(${letter}2,"Yes")'], fill=green,
-                        stopIfTrue=False))
-
-    # whole row tinted once applied
-    applied_col = get_column_letter(first_tick)
-    ws.conditional_formatting.add(
-        f"A2:{get_column_letter(len(cols))}{last}",
-        FormulaRule(formula=[f'EXACT(${applied_col}2,"Yes")'],
-                    fill=PatternFill("solid", fgColor="EAF6EC"),
-                    stopIfTrue=False))
+    dress(ws, cols, [26, 10, 15, 42, 26, 14, 46, 11, 11, 11, 11, 40],
+          tick_cols=("Applied", "Emailed", "Replied"))
 
     wb.save(XLSX)
     return XLSX, len(rows)

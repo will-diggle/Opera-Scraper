@@ -23,8 +23,8 @@ from flask import (Flask, jsonify, render_template_string, request,
 
 import tracker
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
-from openpyxl.utils import get_column_letter
+
+from excel_style import dress
 
 from freshness import assess
 from stage5_prioritise import categorise
@@ -210,6 +210,8 @@ PAGE = """
   <button id="tab_all" onclick="showView('all')">All findings</button>
   <button id="tab_saved" class="ghost" onclick="showView('saved')">
     My shortlist (<span id="savedcount">0</span>)</button>
+  <button id="tab_uncast" class="ghost" onclick="showView('uncast')">
+    Uncast roles (<span id="uncastcount">0</span>)</button>
   <button class="ghost" style="float:right"
           onclick="location='/api/saved/export'">Export shortlist to Excel</button>
 </div>
@@ -241,6 +243,15 @@ PAGE = """
   <button class="ghost" onclick="clearFilters()" style="float:right">Clear filters</button>
   <span id="count" class="muted" style="margin-left:10px"></span>
 </div>
+
+<table id="uncast_tbl" style="display:none">
+  <thead><tr>
+    <th>Save</th><th>Company</th><th>Country</th><th>Production</th>
+    <th>Role</th><th>Voice type</th><th>Also called</th><th>Marked as</th>
+    <th>Link</th>
+  </tr></thead>
+  <tbody></tbody>
+</table>
 
 <table id="saved_tbl" style="display:none">
   <thead><tr>
@@ -284,7 +295,9 @@ function loadSaved(){
     SAVEDROWS = d;
     SAVED.clear(); d.forEach(r => SAVED.add(r.id));
     document.getElementById("savedcount").textContent = d.length;
-    if (VIEW === "saved") drawSaved(); else render();
+    if (VIEW === "saved") drawSaved();
+    else if (VIEW === "uncast") drawUncast();
+    else render();
   });
 }
 
@@ -296,14 +309,56 @@ function toggleSave(json){
               body: JSON.stringify(body)}).then(() => loadSaved());
 }
 
+let UNCAST = [];
+
+function loadUncast(){
+  return fetch("/api/uncast").then(r => r.json()).then(d => {
+    UNCAST = d;
+    document.getElementById("uncastcount").textContent = d.length;
+    if (VIEW === "uncast") drawUncast();
+  });
+}
+
+function drawUncast(){
+  const tb = document.querySelector("#uncast_tbl tbody");
+  if (!UNCAST.length){
+    tb.innerHTML = `<tr><td colspan="9" class="muted" style="padding:26px">
+      No scan yet. Run it in Terminal with:
+      <code>.venv/bin/python stage7_uncast.py</code></td></tr>`;
+    return;
+  }
+  tb.innerHTML = UNCAST.map(u => {
+    const asRow = {Company:u.Company, Country:u.Country,
+      "Role / posting": `${u.Role} — ${u.Production} (not yet cast)`,
+      "Voice type": u["Voice type"], Link:u.Link};
+    const id = rid(asRow);
+    return `<tr>
+      <td class="pick"><input type="checkbox" ${SAVED.has(id)?"checked":""}
+          onchange='toggleSave(${JSON.stringify(JSON.stringify(asRow))})'></td>
+      <td><span class="co">${esc(u.Company)}</span></td>
+      <td>${esc(u.Country)}</td>
+      <td>${esc(u.Production)}</td>
+      <td><b>${esc(u.Role)}</b></td>
+      <td>${esc(u["Voice type"]||"")}</td>
+      <td class="muted">${esc(u["Also called"]||"")}</td>
+      <td><span class="tag">${esc(u["Marked as"]||"")}</span></td>
+      <td><a href="${esc(u.Link)}" target="_blank" rel="noopener">open</a></td>
+    </tr>`;
+  }).join("");
+}
+
 function showView(v){
   VIEW = v;
-  document.getElementById("tab_all").className = v==="all" ? "" : "ghost";
-  document.getElementById("tab_saved").className = v==="saved" ? "" : "ghost";
+  const tabs = {all:"tab_all", saved:"tab_saved", uncast:"tab_uncast"};
+  for (const [k, id] of Object.entries(tabs))
+    document.getElementById(id).className = v===k ? "" : "ghost";
   document.getElementById("filters").style.display = v==="all" ? "" : "none";
   document.getElementById("tbl").style.display = v==="all" ? "" : "none";
   document.getElementById("saved_tbl").style.display = v==="saved" ? "" : "none";
-  v === "saved" ? drawSaved() : render();
+  document.getElementById("uncast_tbl").style.display = v==="uncast" ? "" : "none";
+  if (v === "saved") drawSaved();
+  else if (v === "uncast") drawUncast();
+  else render();
 }
 
 function setField(id, field, value){
@@ -350,6 +405,7 @@ fetch("/api/jobs").then(r => r.json()).then(d => {
   buildMulti("company",  [...new Set(d.map(r => r.Company))].sort());
   render();
   loadSaved();
+  loadUncast();
 });
 
 const SEL = {priority:new Set(), country:new Set(), company:new Set()};
@@ -485,27 +541,32 @@ poll();
 """
 
 
+@app.route("/api/uncast")
+def api_uncast():
+    """Roles a house has announced but not yet cast (N.N., TBA, ...)."""
+    path = os.path.join(HERE, "uncast_roles.csv")
+    if not os.path.exists(path):
+        return jsonify([])
+    with open(path, newline="", encoding="utf-8") as fh:
+        return jsonify(list(csv.DictReader(fh)))
+
+
 @app.route("/api/export/excel", methods=["POST"])
 def api_export_excel():
     """Export exactly the rows the user is looking at, as a real .xlsx."""
     rows = request.get_json(force=True) or []
-    cols = ["Priority", "Company", "City", "Country", "Role / posting", "Type",
-            "Deadline found", "Posted", "Freshness", "Date checked", "Link",
-            "Social accounts", "Found on page"]
+    cols = ["Applied", "In touch", "Priority", "Company", "City", "Country",
+            "Role / posting", "Type", "Deadline found", "Posted", "Freshness",
+            "Date checked", "Link", "Social accounts", "Found on page"]
     wb = Workbook()
     ws = wb.active
     ws.title = "Findings"
     ws.append(cols)
     for r in rows:
-        ws.append([r.get(c, "") for c in cols])
-    for i, w in enumerate([24, 28, 15, 9, 56, 12, 16, 13, 14, 13, 46, 40, 40],
-                          start=1):
-        ws.column_dimensions[get_column_letter(i)].width = w
-    for c in ws[1]:
-        c.font = Font(bold=True, color="FFFFFF")
-        c.fill = PatternFill("solid", fgColor="3B3833")
-    ws.freeze_panes = "A2"
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(cols))}{max(ws.max_row, 2)}"
+        # the two tracking columns start empty for you to fill in
+        ws.append(["No", "No"] + [r.get(c, "") for c in cols[2:]])
+    dress(ws, cols, [10, 10, 24, 28, 15, 9, 56, 12, 16, 13, 14, 13, 46, 40, 40],
+          tick_cols=("Applied", "In touch"))
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
