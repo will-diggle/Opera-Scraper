@@ -72,6 +72,11 @@ tr:last-child td{border-bottom:0}
 a{color:var(--accent)}
 tr.done td{background:#edf4ee}
 .empty{padding:50px;text-align:center;color:var(--ink-soft)}
+.tabs{padding:14px 28px 0}
+.tabs .in{max-width:1560px;margin:0 auto;display:flex;gap:8px;align-items:center;
+  flex-wrap:wrap}
+.tabs button span{opacity:.62;margin-left:5px;font-variant-numeric:tabular-nums}
+.tabnote{color:var(--ink-soft);font-size:13px;margin-left:6px;max-width:60ch}
 .multi{position:relative;display:inline-block}
 .pop{display:none;position:absolute;z-index:30;top:112%;left:0;
   background:var(--panel);border:1px solid var(--line);border-radius:11px;
@@ -112,6 +117,14 @@ footer p{max-width:70ch}
   </div>
 </div>
 
+<div class="tabs"><div class="in">
+  <button id="t_open" onclick="setTab('open')">Open positions
+    <span id="n_open">0</span></button>
+  <button id="t_uncast" class="ghost" onclick="setTab('uncast')">Roles not yet cast
+    <span id="n_uncast">0</span></button>
+  <span class="tabnote" id="tabnote"></span>
+</div></div>
+
 <div class="bar"><div class="in">
   <input type="search" id="q" placeholder="Search role, company or city…">
   <span class="multi"><button class="ghost" id="b_country"
@@ -143,6 +156,16 @@ footer p{max-width:70ch}
         <th data-k="9">Checked</th><th>Applied</th><th>In touch</th><th>Link</th>
       </tr></thead>
       <tbody id="body"></tbody>
+    </table>
+  </div>
+  <div class="tablewrap" id="uncastwrap" hidden>
+    <table>
+      <thead><tr>
+        <th></th><th>Company</th><th>Country</th><th>Production</th>
+        <th>Role</th><th>Voice type</th><th>Marked as</th>
+        <th>Applied</th><th>In touch</th><th>Link</th>
+      </tr></thead>
+      <tbody id="ubody"></tbody>
     </table>
   </div>
   <div class="empty" id="empty" hidden>Nothing matches those filters.</div>
@@ -317,6 +340,7 @@ draw();
 <script src="./xlsx.js"></script>
 <script>
 function download(){
+  if (TAB === "uncast") return downloadUncast();
   const chosen = PICKED.size ? view.filter(r => PICKED.has(r[10])) : view;
   const cols = [
     {header:"Applied", width:10}, {header:"In touch", width:10},
@@ -336,6 +360,27 @@ function download(){
   a.download = "opera-auditions.xlsx";
   document.body.appendChild(a); a.click(); a.remove();
 }
+function downloadUncast(){
+  const cols = [
+    {header:"Applied", width:10}, {header:"In touch", width:10},
+    {header:"Company", width:28}, {header:"Country", width:12},
+    {header:"Production", width:30}, {header:"Role", width:26},
+    {header:"Voice type", width:30}, {header:"Composer", width:16},
+    {header:"Marked as", width:14}, {header:"Link", width:46}];
+  const rows = UNCAST.map((u, i) => {
+    const mine = MINE["u" + i] || {};
+    return [mine.applied ? "Yes" : "No", mine.touched ? "Yes" : "No",
+            u.Company, u.Country, u.Production, u.Role, u["Voice type"],
+            u.Composer, u["Marked as"], u.Link];
+  });
+  const blob = miniXlsx.build({sheet:"Roles not yet cast", columns:cols, rows,
+                               tickColumns:[0, 1]});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "uncast-roles.xlsx";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
 document.getElementById("csv").addEventListener("click", download);
 
 // each visitor's ticks live in their own browser only
@@ -344,16 +389,60 @@ function mark(i, field, on){
   MINE[i] = MINE[i] || {};
   MINE[i][field] = on;
   localStorage.setItem("mine", JSON.stringify(MINE));
-  draw();
+  TAB === "uncast" ? drawUncast() : draw();
+}
+
+let UNCAST = [], TAB = "open";
+
+function setTab(t){
+  TAB = t;
+  document.getElementById("t_open").className = t === "open" ? "" : "ghost";
+  document.getElementById("t_uncast").className = t === "uncast" ? "" : "ghost";
+  // the filters belong to the openings list only
+  document.querySelector(".bar").style.display = t === "open" ? "" : "none";
+  document.querySelector(".tablewrap").hidden = t !== "open";
+  document.getElementById("uncastwrap").hidden = t !== "uncast";
+  document.getElementById("tabnote").textContent = t === "uncast"
+    ? "Roles a house has announced but not yet cast \u2014 marked N.N., TBA or "
+      + "\u201cBesetzung folgt\u201d. Not advertised jobs: leads worth a letter."
+    : "";
+  t === "uncast" ? drawUncast() : draw();
+}
+
+function drawUncast(){
+  document.getElementById("ubody").innerHTML = UNCAST.map((u, i) => {
+    const key = "u" + i, mine = MINE[key] || {};
+    return `<tr class="${mine.applied ? "done" : ""}">
+      <td class="pick"></td>
+      <td><span class="co">${esc(u.Company)}</span></td>
+      <td>${esc(u.Country)}</td>
+      <td>${esc(u.Production)}</td>
+      <td><b>${esc(u.Role)}</b></td>
+      <td>${u["Voice type"] === "N.A."
+            ? '<span class="q">not in the fach list</span>'
+            : esc(u["Voice type"])}
+          ${u["Also called"] ? `<div class="q">also called ${esc(u["Also called"])}</div>` : ""}</td>
+      <td><span class="chip">${esc(u["Marked as"])}</span></td>
+      <td class="pick"><input type="checkbox" ${mine.applied ? "checked" : ""}
+          onchange="mark('${key}','applied',this.checked)"></td>
+      <td class="pick"><input type="checkbox" ${mine.touched ? "checked" : ""}
+          onchange="mark('${key}','touched',this.checked)"></td>
+      <td><a href="${esc(u.Link)}" target="_blank" rel="noopener">open</a></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="10" style="padding:40px;text-align:center"
+      class="q">Nothing uncast found in the last scan.</td></tr>`;
 }
 
 fetch("./data.json").then(r => r.json()).then(d => {
+  UNCAST = d.uncast || [];
+  document.getElementById("n_uncast").textContent = UNCAST.length;
   ROWS = d.rows.map(o => KEYS.map(k => o[k]));
   ROWS.forEach((r, i) => r[10] = i);
   document.querySelector(".eyebrow").textContent =
     "Websites last checked \u00b7 " + d.checked;
   OPTS.country = [...new Set(ROWS.map(r => r[3]))].filter(Boolean).sort();
   OPTS.kind = [...new Set(ROWS.map(r => r[0]))].filter(Boolean).sort();
+  document.getElementById("n_open").textContent = ROWS.length;
   document.querySelector(".stats").innerHTML =
     `<div class="stat"><b>${ROWS.length}</b><span>openings listed</span></div>
      <div class="stat"><b>${ROWS.filter(r=>r[7]==="Upcoming").length}</b>

@@ -10,6 +10,7 @@ Run:  .venv/bin/python make_public_data.py
 Out:  public_data.json
 """
 
+import csv
 import json
 import os
 
@@ -22,13 +23,28 @@ KEYS = ["Kind", "Company", "City", "Country", "Role", "Deadline", "Posted",
         "Freshness", "Link", "Checked"]
 
 
+UNCAST_KEEP = ["Company", "Country", "Production", "Role", "Voice type",
+               "Also called", "Composer", "Marked as", "Link"]
+
+
+def uncast():
+    """Roles a house has announced but not yet cast."""
+    path = os.path.join(HERE, "uncast_roles.csv")
+    if not os.path.exists(path):
+        return []
+    with open(path, newline="", encoding="utf-8") as fh:
+        return [{k: r.get(k, "") for k in UNCAST_KEEP}
+                for r in csv.DictReader(fh)]
+
+
 def main():
     rows = [dict(zip(KEYS, r)) for r in load()]
     payload = {"checked": data_date([r["Checked"] for r in rows]),
-               "rows": rows}
+               "rows": rows, "uncast": uncast()}
     with open(OUT, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False)
     print(f"Wrote {OUT}: {len(rows)} openings, "
+          f"{len(payload['uncast'])} uncast roles, "
           f"{os.path.getsize(OUT)/1024:.0f} KB")
 
 
