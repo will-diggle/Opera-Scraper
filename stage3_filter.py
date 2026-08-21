@@ -29,6 +29,17 @@ KEEP_TYPES = {"TheaterGroup", "PerformingGroup", "MusicGroup",
               "Organization", "TheaterEvent", "Festival", ""}
 
 
+# Operabase lists anyone who has ever hosted a concert, including banks and
+# town halls. Their careers pages are enormous and never contain singing work.
+import re
+NOT_AN_EMPLOYER = re.compile(
+    r"\bbank\b|zentralbank|central bank|\bbanca\b|\bbanco\b|"
+    r"ministry|ministerium|ministero|embassy|botschaft|ambassade|"
+    r"ayuntamiento|comune di |stadtverwaltung|town council|county council|"
+    r"chamber of commerce|handelskammer|insurance|versicherung|"
+    r"airport|flughafen|hotel |university press", re.I)
+
+
 def domain(url):
     try:
         d = urlparse(url).netloc.lower()
@@ -62,6 +73,9 @@ def main():
             continue
         if r["org_type"] not in KEEP_TYPES:
             skipped["other type"] += 1
+            continue
+        if NOT_AN_EMPLOYER.search(r["name"]):
+            skipped["not a music employer"] = skipped.get("not a music employer", 0) + 1
             continue
         d = domain(r["website"])
         if not d or d in seen_domains:

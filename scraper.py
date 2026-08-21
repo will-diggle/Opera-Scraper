@@ -35,6 +35,7 @@ TIMEOUT = 20            # seconds to wait for a page
 PAUSE = 1.0             # polite pause between requests to the same site
 WORKERS = 24            # how many companies at once (all different sites)
 MAX_PAGES_PER_SITE = 8  # how many candidate pages to open per company
+MAX_ROWS_PER_COMPANY = 40  # no single site should flood the results
 
 # Words in a LINK that suggest it leads to a jobs/auditions page.
 SECTION_WORDS = [
@@ -323,6 +324,11 @@ def scrape_company(row):
         if k not in seen:
             seen.add(k)
             uniq.append(r)
+
+    if len(uniq) > MAX_ROWS_PER_COMPANY:
+        log(f"  ! {company}: {len(uniq)} items, keeping first "
+            f"{MAX_ROWS_PER_COMPANY} - looks like a general careers site")
+        uniq = uniq[:MAX_ROWS_PER_COMPANY]
 
     # carry any social accounts we know about, so you can click through and
     # check their feeds by hand - social sites block automated reading.
