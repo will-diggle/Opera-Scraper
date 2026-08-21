@@ -119,18 +119,27 @@ PAGE = """
 <!doctype html><meta charset="utf-8"><title>Opera Jobs</title>
 <style>
  :root{--bg:#faf9f5;--panel:#ffffff;--ink:#1f1e1b;--line:#e6e3db;
-        --accent:#3b3833;--soft:#736f66;--tint:#f0eee7}
+        --accent:#3b3833;--soft:#736f66;--tint:#f0eee7;
+        /* Guardian sets headlines in Guardian Egyptian, a slab serif, and
+           furniture in a grotesque sans. Those faces are licensed to them,
+           so this is the closest pairing from fonts already on the Mac. */
+        --serif:"Charter","Bitstream Charter","Georgia","Times New Roman",serif;
+        --sans:"Helvetica Neue","Inter",-apple-system,BlinkMacSystemFont,
+               "Segoe UI",Arial,sans-serif}
  *{box-sizing:border-box}
- body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ body{margin:0;font:15px/1.55 var(--sans);
       background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
  header{background:transparent;color:var(--ink);padding:34px 24px 20px;
         max-width:1500px;border-bottom:1px solid var(--line)}
- header .eyebrow{font:600 11px/1 -apple-system,sans-serif;letter-spacing:.16em;
+ header .eyebrow{font:700 11px/1 var(--sans);letter-spacing:.14em;
         text-transform:uppercase;color:var(--soft)}
- header h1{margin:12px 0 0;font:400 34px/1.1 "Iowan Old Style",
-        "Palatino Linotype",Palatino,Georgia,serif;letter-spacing:-.01em}
- header p{margin:10px 0 0;color:var(--soft);font-size:14.5px;max-width:64ch}
+ header h1{margin:10px 0 0;font:700 36px/1.08 var(--serif);
+        letter-spacing:-.015em}
+ header p{margin:10px 0 0;color:var(--soft);font:16px/1.5 var(--serif);
+        max-width:60ch}
  .wrap{padding:20px 24px;max-width:1500px}
+ .panel > strong{font:700 15px/1.2 var(--serif)}
+ td .co, td b{font:700 14.5px/1.3 var(--serif)}
  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
         padding:18px;margin-bottom:16px}
  button{font:inherit;padding:8px 14px;border-radius:9px;border:1px solid var(--accent);
@@ -146,8 +155,8 @@ PAGE = """
  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
        vertical-align:top}
  th{background:var(--tint);position:sticky;top:0;cursor:pointer;
-       white-space:nowrap;font:600 11px/1 -apple-system,sans-serif;
-       letter-spacing:.09em;text-transform:uppercase;color:var(--soft);
+       white-space:nowrap;font:700 11px/1 var(--sans);
+       letter-spacing:.08em;text-transform:uppercase;color:var(--soft);
        padding:11px 10px}
  tr:hover td{background:var(--bg)}
  a{color:var(--accent)}
@@ -420,7 +429,7 @@ function render() {
             onchange='toggleSave(${JSON.stringify(JSON.stringify(r))})'
             title="Add to my shortlist"></td>
       <td><span class="tag">${esc((r.Priority||"").replace(/ - /," "))}</span></td>
-      <td>${esc(r.Company)}${r.City ? '<div class="muted">'+esc(r.City)+'</div>' : ''}</td>
+      <td><span class="co">${esc(r.Company)}</span>${r.City ? '<div class="muted">'+esc(r.City)+'</div>' : ''}</td>
       <td>${esc(r.Country)}</td>
       <td>${esc(r["Role / posting"])}</td>
       <td><span class="tag ${esc(r.Type)}">${esc(r.Type)}</span></td>

@@ -216,6 +216,12 @@ INSTRUMENT = re.compile(
     r"schlagzeug|timbales|pauke|klavier|piano|orgel|orgue", re.I)
 
 
+# Fragments of dates, headings and credits that survive the line pairing.
+JUNK_ROLE = re.compile(
+    r"^\(|^//|^\d|\)\s*,?$|^[A-ZÄÖÜ ]{4,}$|magazin|koordinator|leitung|"
+    r"keine bezeichnung|schauspielerin|schauspieler\b", re.I)
+
+
 def looks_like_person(text):
     """'Jean-Charles Masurier' is a name; 'Don Ottavio' is a role we may know."""
     if norm(text) in FACH:
@@ -265,6 +271,8 @@ def scan_company(row):
             continue
         for role, value in read_cast(p):
             if INSTRUMENT.search(role) or looks_like_person(role):
+                continue
+            if JUNK_ROLE.search(role) and norm(role) not in FACH:
                 continue
             # a bare dash is too weak on its own - only trust it for a known role
             if value.strip(" .") in {"-", "--", "—", "–"} and norm(role) not in FACH:
