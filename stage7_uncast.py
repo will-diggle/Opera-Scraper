@@ -89,8 +89,12 @@ PLACEHOLDER = re.compile(
     # Central & Eastern Europe
     r"|do ustalenia|obsada w przygotowaniu|bude up[rř]esn[eě]no"
     r"|p[rř]ipravujeme|k[eé]s[oő]bb|hamarosan"
-    r"|\?{2,}|--+|—+|\*{2,}|\.{3,}"
     r")$", re.I)
+
+# A row of dashes or asterisks might mean "not cast", or might just be a
+# separator. Too weak to trust alone - only accepted for a role we recognise
+# in an opera the page actually names.
+WEAK_MARKER = re.compile(r"^(?:[-–—]{1,}|\*{2,}|\.{3,}|\?{2,}|_{2,})$")
 
 # Lines that are production credits, not singing roles.
 CREW = re.compile(
@@ -105,6 +109,9 @@ CREW = re.compile(
     r"musik|text|libretto|komponist|autor|nach |fassung|sprache|ort|preise|"
     r"einf[uü]hrung|altersempfehlung|urauff[uü]hrung|besetzung|duration|"
     r"language|running time|prezzi|durata|dur[eé]e|idioma)", re.I)
+
+
+OPERA_TITLES = set()
 
 
 def strip_accents(s):
@@ -131,17 +138,42 @@ def load_fach():
 
 
 FACH = load_fach()
+OPERA_TITLES.update(norm(r["opera"]) for hits in FACH.values() for r in hits)
 _lock = threading.Lock()
 
 # Counters so a run can report how much of the repertoire it actually opened,
 # rather than leaving you to guess at its coverage.
 STATS = {"companies": 0, "reached": 0, "season_pages": 0, "productions": 0,
-         "with_cast": 0}
+         "pages_read": 0, "pages_with_finding": 0}
 
 
 def bump(key, n=1):
     with _lock:
         STATS[key] += n
+
+
+class OfflineError(Exception):
+    """Raised when the internet has dropped, rather than the sites being dead."""
+
+
+# Same guard as the job scraper: without it a dropped connection produces a
+# run that says "Done. 0 uncast roles" and looks like a real answer.
+BREAKER_LIMIT = 25
+_misses = 0
+
+
+def note_home(ok):
+    global _misses
+    with _lock:
+        if ok:
+            _misses = 0
+            return
+        _misses += 1
+        if _misses >= BREAKER_LIMIT:
+            raise OfflineError(
+                f"{_misses} company homepages in a row could not be reached - "
+                "your connection looks down. Stopping rather than reporting an "
+                "empty result. Nothing unreachable was cached; rerun to continue.")
 
 
 def log(m):
@@ -193,7 +225,7 @@ def production_title(soup, url):
     return url.rsplit("/", 1)[-1].replace("-", " ").title()
 
 
-def read_cast(soup):
+def read_cast(soup, page_text=""):
     """Return [(role, value)] pairs from a production page.
 
     Cast lists are laid out as alternating lines - role, then who sings it -
@@ -209,12 +241,16 @@ def read_cast(soup):
             continue
         if len(role) < 3 or role.endswith((":",)) and len(role) < 4:
             continue
-        if PLACEHOLDER.match(value.strip(" .")):
-            pairs.append((role.rstrip(":").strip(), value.strip()))
+        v = value.strip(" .")
+        name = role.rstrip(":").strip()
+        if PLACEHOLDER.match(v):
+            pairs.append((name, value.strip()))
+        elif WEAK_MARKER.match(v) and credible(name, page_text):
+            pairs.append((name, value.strip()))
     return pairs
 
 
-def read_blank_cast(soup):
+def read_blank_cast(soup, page_text=""):
     """Roles whose singer cell is simply EMPTY.
 
     Plenty of houses leave the name blank rather than writing N.N., and an
@@ -233,7 +269,7 @@ def read_blank_cast(soup):
             return
         if CREW.match(label) or len(label) < 3:
             return
-        if norm(label) in FACH:                 # only roles we can name
+        if credible(label, page_text):
             found.append((label, "(left blank)"))
 
     for tr in soup.find_all("tr"):
@@ -256,6 +292,24 @@ def read_blank_cast(soup):
             consider(kids[0].get_text(" ", strip=True),
                      kids[1].get_text(" ", strip=True))
     return found
+
+
+def credible(role, page_text):
+    """Is this really a role on this page, rather than a title in a list?
+
+    Two traps: an opera's name is often also a character's name (Don Giovanni,
+    Falstaff, Tosca), and season listings put those titles in tables full of
+    empty cells. So a weak signal is only believed when the label is a role we
+    know AND the page names the opera that role belongs to.
+    """
+    key = norm(role)
+    if key in OPERA_TITLES:            # "Don Giovanni" as a season entry
+        return False
+    hits = FACH.get(key, [])
+    if not hits:
+        return False
+    low = strip_accents(page_text.lower())
+    return any(strip_accents(h["opera"].lower()) in low for h in hits)
 
 
 def match_fach(role, page_text):
@@ -324,7 +378,9 @@ def scan_company(row):
     bump("companies")
     home = fetch(site, session)
     if home is None:
-        return company, []
+        note_home(False)
+        return company, None          # None = never checked, do not cache
+    note_home(True)
     bump("reached")
 
     seasons = links_matching(home, site, SEASON_WORDS, MAX_SEASON_PAGES)
@@ -348,17 +404,17 @@ def scan_company(row):
         if p is None:
             continue
         text = p.get_text(" ", strip=True)
-        if not PLACEHOLDER.search("") and not re.search(
-                r"\bN\.?\s?N\.?\b|\bTBA\b|\bTBC\b|Besetzung folgt|da definire"
-                r"|[aà] confirmer|por confirmar", text, re.I):
-            continue
-        bump("with_cast")
+        # No pre-filter here. An earlier version skipped any page whose text
+        # lacked one of a handful of markers, which (a) threw away pages where
+        # the singer cell is simply blank and (b) silently ignored most of the
+        # placeholder phrases below. Both passes now run on every page.
+        bump("pages_read")
         title = production_title(p, p_url)
         if NOT_A_CAST_PAGE.search(p_url) or NOT_A_CAST_PAGE.search(title):
             continue
         if IS_BALLET.search(title) or IS_BALLET.search(p_url):
             continue
-        cast = read_cast(p) + read_blank_cast(p)
+        cast = read_cast(p, text) + read_blank_cast(p, text)
         seen_here = set()
         for role, value in cast:
             if norm(role) in seen_here:
@@ -389,6 +445,9 @@ def scan_company(row):
                 "Link": p_url,
                 "Found on": date.today().isoformat(),
             })
+
+    if out:
+        bump("pages_with_finding")
 
     # a page can repeat a cast block; keep one row per role per production
     uniq, seen_k = [], set()
@@ -459,16 +518,23 @@ def main():
     log(f"{len(FACH)} roles in the fach table")
     log(f"{len(done)} companies already scanned, {len(todo)} to go")
 
-    with open(CACHE, "a", encoding="utf-8") as cache:
+    stopped = ""
+    try:
+      with open(CACHE, "a", encoding="utf-8") as cache:
         with ThreadPoolExecutor(max_workers=WORKERS) as pool:
             for n, (company, found) in enumerate(
                     pool.map(scan_company, todo), start=1):
+                if found is None:                 # unreachable: try again later
+                    continue
                 cache.write(json.dumps({"company": company, "rows": found},
                                        ensure_ascii=False) + "\n")
                 rows.extend(found)
                 if n % 25 == 0:
                     cache.flush()
                     log(f"  --- {n}/{len(todo)} companies, {len(rows)} roles ---")
+    except OfflineError as e:
+        stopped = str(e)
+        log(f"\n!! STOPPED: {stopped}")
 
     write_out(rows)
     withfach = sum(1 for r in rows if r["Voice type"] != "N.A.")
@@ -477,8 +543,10 @@ def main():
     log(f"  websites reached            {STATS['reached']}")
     log(f"  season/programme pages read {STATS['season_pages']}")
     log(f"  production pages opened     {STATS['productions']}")
-    log(f"  of those, carried a cast    {STATS['with_cast']}")
-    log(f"\nDone. {len(rows)} uncast roles ({withfach} matched to a voice type).")
+    log(f"  production pages read       {STATS['pages_read']}")
+    log(f"  pages with an uncast role   {STATS['pages_with_finding']}")
+    log(f"\n{'PARTIAL' if stopped else 'Done'}. {len(rows)} uncast roles "
+        f"({withfach} matched to a voice type).")
     log(f"Wrote {OUT_CSV} and {OUT_XLSX}")
 
 
