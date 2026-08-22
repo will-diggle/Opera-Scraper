@@ -214,6 +214,50 @@ def read_cast(soup):
     return pairs
 
 
+def read_blank_cast(soup):
+    """Roles whose singer cell is simply EMPTY.
+
+    Plenty of houses leave the name blank rather than writing N.N., and an
+    empty cell vanishes when a page is read as plain text. So this works on
+    the markup instead - table rows, definition lists and label/value pairs -
+    and reports a role whose value side has nothing in it.
+
+    Empty cells are common in all sorts of tables, so to stay honest we only
+    accept a blank when the label is a role we actually recognise.
+    """
+    found = []
+
+    def consider(label, value):
+        label = (label or "").strip().rstrip(":").strip()
+        if not label or value.strip():
+            return
+        if CREW.match(label) or len(label) < 3:
+            return
+        if norm(label) in FACH:                 # only roles we can name
+            found.append((label, "(left blank)"))
+
+    for tr in soup.find_all("tr"):
+        cells = tr.find_all(["td", "th"], recursive=False) or tr.find_all(["td", "th"])
+        if len(cells) == 2:
+            consider(cells[0].get_text(" ", strip=True),
+                     cells[1].get_text(" ", strip=True))
+
+    for dl in soup.find_all("dl"):
+        items = dl.find_all(["dt", "dd"])
+        for a, b in zip(items, items[1:]):
+            if a.name == "dt" and b.name == "dd":
+                consider(a.get_text(" ", strip=True), b.get_text(" ", strip=True))
+
+    # label/value pairs built from divs or spans
+    for el in soup.find_all(["li", "div", "p"]):
+        kids = [k for k in el.find_all(["span", "div", "strong", "b"],
+                                       recursive=False)]
+        if len(kids) == 2:
+            consider(kids[0].get_text(" ", strip=True),
+                     kids[1].get_text(" ", strip=True))
+    return found
+
+
 def match_fach(role, page_text):
     """Look the role up in the fach table; prefer the opera named on the page."""
     hits = FACH.get(norm(role), [])
@@ -232,7 +276,19 @@ def match_fach(role, page_text):
 NOT_A_CAST_PAGE = re.compile(
     r"equipe|\bteam\b|mitarbeiter|personal|kollegium|orchester|orchestra|"
     r"ensemble-und-team|wer-wir-sind|about-us|ueber-uns|kontakt|impressum|"
-    r"verwaltung|leitung|stiftung|freunde|foerderverein", re.I)
+    r"verwaltung|leitung|stiftung|freunde|foerderverein|"
+    # access and listing pages name several operas at once, so every title
+    # on them looks like an uncast role
+    r"audio[- ]described|access|barrierefrei|relaxed[- ]performance|surtitl|"
+    r"untertitel|gebaerdensprache|touch[- ]tour|schools|gruppen|newsletter|"
+    r"abonnement|\babo\b|gutschein|geschenk|preise|tickets?$", re.I)
+
+# A ballet borrows its characters' names from the opera it is based on, so
+# "Manon Lescaut" in Die Kameliendame is a dancer, not a singing role.
+IS_BALLET = re.compile(
+    r"\bballett?\b|ballet|balletto|tanz|\bdance\b|choreograph|"
+    r"kameliendame|schwanensee|nussknacker|swan lake|nutcracker|giselle",
+    re.I)
 
 # Instrument names appear in orchestra vacancy lists, which are not for singers.
 INSTRUMENT = re.compile(
@@ -300,7 +356,14 @@ def scan_company(row):
         title = production_title(p, p_url)
         if NOT_A_CAST_PAGE.search(p_url) or NOT_A_CAST_PAGE.search(title):
             continue
-        for role, value in read_cast(p):
+        if IS_BALLET.search(title) or IS_BALLET.search(p_url):
+            continue
+        cast = read_cast(p) + read_blank_cast(p)
+        seen_here = set()
+        for role, value in cast:
+            if norm(role) in seen_here:
+                continue
+            seen_here.add(norm(role))
             if INSTRUMENT.search(role) or looks_like_person(role):
                 continue
             if JUNK_ROLE.search(role) and norm(role) not in FACH:
