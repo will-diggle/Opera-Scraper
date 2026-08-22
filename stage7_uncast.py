@@ -43,8 +43,8 @@ CACHE = "uncast_cache.jsonl"
 TIMEOUT = 20
 PAUSE = 0.6
 WORKERS = 8
-MAX_SEASON_PAGES = 6      # season/repertoire index pages per company
-MAX_PRODUCTIONS = 30      # production pages per company
+MAX_SEASON_PAGES = 10     # season/repertoire index pages per company
+MAX_PRODUCTIONS = 90      # production pages per company
 
 HEADERS = {
     "User-Agent": (
@@ -66,14 +66,30 @@ PLACEHOLDER = re.compile(
     r"^(?:"
     r"n\.?\s*n\.?"                     # N.N. / NN / N. N.
     r"|t\.?b\.?[acd]\.?"               # TBA / TBC / TBD
-    r"|to be (?:announced|confirmed|cast)"
+    r"|to be (?:announced|confirmed|cast|advised)"
+    r"|cast to be announced|casting in progress"
+    # German
     r"|besetzung folgt|wird noch bekannt ?gegeben|noch nicht besetzt"
-    r"|in kuerze|demn[aä]chst"
-    r"|da definire|in via di definizione|da destinarsi"
-    r"|[aà] confirmer|distribution en cours"
-    r"|por confirmar|por determinar"
-    r"|nog niet bekend"
-    r"|\?{2,}|--+|—+"
+    r"|steht noch nicht fest|noch offen|in vorbereitung|wird nachgereicht"
+    r"|n\.n\. \(.*\)|in k[uü]rze|demn[aä]chst|vakant"
+    # Italian
+    r"|da definire|in via di definizione|da destinarsi|da nominare"
+    r"|sar[aà] comunicato|in fase di definizione"
+    # French
+    r"|[aà] confirmer|distribution en cours|en cours de distribution"
+    r"|[aà] d[eé]finir|prochainement"
+    # Spanish / Portuguese
+    r"|por confirmar|por determinar|por designar|pendiente de confirmar"
+    r"|a confirmar|a designar"
+    # Dutch
+    r"|nog niet bekend|nader te bepalen|wordt bekendgemaakt|volgt nog"
+    # Nordic
+    r"|meddelas senare|ej fastst[aä]lld|annonseres senere|kommer senere"
+    r"|oplyses senere|ilmoitetaan my[oö]hemmin"
+    # Central & Eastern Europe
+    r"|do ustalenia|obsada w przygotowaniu|bude up[rř]esn[eě]no"
+    r"|p[rř]ipravujeme|k[eé]s[oő]bb|hamarosan"
+    r"|\?{2,}|--+|—+|\*{2,}|\.{3,}"
     r")$", re.I)
 
 # Lines that are production credits, not singing roles.
@@ -116,6 +132,16 @@ def load_fach():
 
 FACH = load_fach()
 _lock = threading.Lock()
+
+# Counters so a run can report how much of the repertoire it actually opened,
+# rather than leaving you to guess at its coverage.
+STATS = {"companies": 0, "reached": 0, "season_pages": 0, "productions": 0,
+         "with_cast": 0}
+
+
+def bump(key, n=1):
+    with _lock:
+        STATS[key] += n
 
 
 def log(m):
@@ -239,9 +265,11 @@ def scan_company(row):
     session = requests.Session()
     out = []
 
+    bump("companies")
     home = fetch(site, session)
     if home is None:
         return company, []
+    bump("reached")
 
     seasons = links_matching(home, site, SEASON_WORDS, MAX_SEASON_PAGES)
     prod_urls, seen = [], set()
@@ -255,6 +283,8 @@ def scan_company(row):
                 seen.add(u)
                 prod_urls.append(u)
     prod_urls = prod_urls[:MAX_PRODUCTIONS]
+    bump("season_pages", len(seasons))
+    bump("productions", len(prod_urls))
 
     for p_url in prod_urls:
         time.sleep(PAUSE)
@@ -266,6 +296,7 @@ def scan_company(row):
                 r"\bN\.?\s?N\.?\b|\bTBA\b|\bTBC\b|Besetzung folgt|da definire"
                 r"|[aà] confirmer|por confirmar", text, re.I):
             continue
+        bump("with_cast")
         title = production_title(p, p_url)
         if NOT_A_CAST_PAGE.search(p_url) or NOT_A_CAST_PAGE.search(title):
             continue
@@ -378,6 +409,12 @@ def main():
 
     write_out(rows)
     withfach = sum(1 for r in rows if r["Voice type"] != "N.A.")
+    log("")
+    log(f"  companies in the list       {STATS['companies']}")
+    log(f"  websites reached            {STATS['reached']}")
+    log(f"  season/programme pages read {STATS['season_pages']}")
+    log(f"  production pages opened     {STATS['productions']}")
+    log(f"  of those, carried a cast    {STATS['with_cast']}")
     log(f"\nDone. {len(rows)} uncast roles ({withfach} matched to a voice type).")
     log(f"Wrote {OUT_CSV} and {OUT_XLSX}")
 
