@@ -1,0 +1,32 @@
+{
+ "uncast": {
+  "companies": 222,
+  "reached": 218,
+  "season_pages": 1800,
+  "productions": 12512,
+  "pages_read": 11166,
+  "roles_found": 57,
+  "roles_with_voice": 23,
+  "companies_with_roles": 26,
+  "complete": true,
+  "last_run": "2026-08-21"
+ },
+ "jobs_curated": {
+  "companies": 222,
+  "reached": 220,
+  "rows_found": 279,
+  "singer_rows": 157,
+  "companies_in_list": 222,
+  "complete": true,
+  "last_run": "2026-08-21"
+ },
+ "jobs_full": {
+  "companies": 12288,
+  "reached": 11293,
+  "rows_found": 3418,
+  "singer_rows": 1301,
+  "companies_in_list": 12288,
+  "complete": true,
+  "last_run": "2026-08-21"
+ }
+}

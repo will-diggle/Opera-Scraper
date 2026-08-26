@@ -25,6 +25,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
+import scan_stats
+
 # --- settings you may want to tweak -----------------------------------------
 
 COMPANIES_FILE = "companies.csv"
@@ -121,7 +123,15 @@ class OfflineError(Exception):
 # reports every remaining company as unreachable.
 BREAKER_LIMIT = 40
 _consecutive_conn_fail = 0
+
+# What this run covered, so the website can state it rather than guess.
+COUNTS = {"companies": 0, "reached": 0, "pages_read": 0}
 _breaker_lock = threading.Lock()
+
+
+def tally(key, n=1):
+    with _breaker_lock:
+        COUNTS[key] += n
 
 
 def note_connection(failed):
@@ -296,12 +306,14 @@ def scrape_company(row):
     session = requests.Session()
     results, notes = [], ""
 
+    tally("companies")
     soup, final = fetch(site, session)
     if soup is None:
         log(f"  ✗ {company}: homepage failed ({final})")
         return [], {"Company": company, "Country": country, "Website": site,
                     "Result": f"could not open homepage ({final})"}
 
+    tally("reached")
     candidates = find_section_links(soup, final)[:MAX_PAGES_PER_SITE]
     if not candidates:
         notes = "no jobs/auditions link found on homepage"
@@ -315,6 +327,7 @@ def scrape_company(row):
         s, f = fetch(url, session)
         if s is None:
             continue
+        tally("pages_read")
         results.extend(extract_items(s, f, company, country))
 
     # de-duplicate by (title, link)
@@ -399,6 +412,7 @@ def main():
     # Big runs take hours, so remember what we've already checked. Stop with
     # Ctrl-C and rerun to carry on; delete the .cache file to start fresh.
     cache_path = out_prefix + "_cache.jsonl"
+    fresh_sweep = not os.path.exists(cache_path)
     all_rows, coverage, done = [], [], set()
     if os.path.exists(cache_path):
         with open(cache_path, encoding="utf-8") as fh:
@@ -452,6 +466,17 @@ def main():
                             "Notes"])
         w.writeheader()
         w.writerows(all_rows)
+
+    section = "jobs_full" if "targets" in infile else "jobs_curated"
+    scan_stats.record(section, {
+        "companies": COUNTS["companies"], "reached": COUNTS["reached"],
+        "pages_read": COUNTS["pages_read"],
+    }, fresh_sweep, extra={
+        "rows_found": len(all_rows),
+        "singer_rows": sum(1 for r in all_rows if r["Type"] == "Singer"),
+        "companies_in_list": len(companies),
+        "complete": not stopped,
+    })
 
     write_xlsx(all_rows, coverage)
     singers = sum(1 for r in all_rows if r["Type"] == "Singer")

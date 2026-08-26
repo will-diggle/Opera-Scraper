@@ -14,6 +14,7 @@ import csv
 import json
 import os
 
+import scan_stats
 from make_share_page import load, data_date
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +41,10 @@ def uncast():
 def main():
     rows = [dict(zip(KEYS, r)) for r in load()]
     payload = {"checked": data_date([r["Checked"] for r in rows]),
-               "rows": rows, "uncast": uncast()}
+               "rows": rows, "uncast": uncast(),
+               # figures written by the scans themselves, so the site reports
+               # its own coverage and it updates with every scrape
+               "stats": scan_stats.read()}
     with open(OUT, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False)
     print(f"Wrote {OUT}: {len(rows)} openings, "

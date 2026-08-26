@@ -30,6 +30,8 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
+
+import scan_stats
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
@@ -503,6 +505,7 @@ def main():
     if args:
         companies = [c for c in companies if args[0].lower() in c["name"].lower()]
 
+    fresh_sweep = not os.path.exists(CACHE)
     done, rows = set(), []
     if os.path.exists(CACHE):
         with open(CACHE, encoding="utf-8") as fh:
@@ -538,6 +541,15 @@ def main():
 
     write_out(rows)
     withfach = sum(1 for r in rows if r["Voice type"] != "N.A.")
+    scan_stats.record("uncast", {
+        "companies": STATS["companies"], "reached": STATS["reached"],
+        "season_pages": STATS["season_pages"],
+        "productions": STATS["productions"], "pages_read": STATS["pages_read"],
+    }, fresh_sweep, extra={
+        "roles_found": len(rows), "roles_with_voice": withfach,
+        "companies_with_roles": len({r["Company"] for r in rows}),
+        "complete": not stopped,
+    })
     log("")
     log(f"  companies in the list       {STATS['companies']}")
     log(f"  websites reached            {STATS['reached']}")

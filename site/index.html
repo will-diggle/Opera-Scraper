@@ -98,6 +98,21 @@ td.pick input,th.pick input{width:15px;height:15px;cursor:pointer;accent-color:v
 tr.chosen td{background:var(--accent-soft)}
 .selnote{color:var(--ink-soft);font-size:13px}
 .selnote button{padding:4px 9px;font-size:12.5px;margin-left:6px}
+.coverage{max-width:1560px;margin:0 auto;padding:4px 28px 0}
+.coverage h2{font:400 17px/1.2 var(--serif);margin:0 0 4px}
+.coverage details{border-top:1px solid var(--line);padding-top:14px}
+.coverage summary{cursor:pointer;font:600 11px/1 var(--serif);
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-soft);
+  list-style:none}
+.coverage summary::-webkit-details-marker{display:none}
+.coverage summary::after{content:" \25be";}
+.coverage details[open] summary::after{content:" \25b4";}
+.covgrid{display:grid;gap:18px 34px;margin-top:18px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.cov b{display:block;font:400 25px/1 var(--serif);
+  font-variant-numeric:tabular-nums}
+.cov span{font-size:12px;color:var(--ink-soft);letter-spacing:.04em;
+  text-transform:uppercase}
 footer{max-width:1560px;margin:0 auto;padding:0 28px 60px;
   color:var(--ink-soft);font-size:13px;line-height:1.6}
 footer p{max-width:70ch}
@@ -116,6 +131,14 @@ footer p{max-width:70ch}
     <div class="stat"><b>__COMPANIES__</b><span>companies</span></div>
   </div>
 </div>
+
+<section class="coverage" id="coverage" hidden>
+  <details>
+    <summary id="covsummary">How much was searched</summary>
+    <p class="q" id="covnote" style="margin:10px 0 0"></p>
+    <div class="covgrid" id="covgrid"></div>
+  </details>
+</section>
 
 <div class="tabs"><div class="in">
   <button id="t_open" onclick="setTab('open')">Open positions
@@ -339,6 +362,35 @@ draw();
 
 <script src="./xlsx.js"></script>
 <script>
+function showCoverage(stats){
+  const jobs = stats.jobs_full || stats.jobs_curated || {};
+  const unc = stats.uncast || {};
+  if (!jobs.companies && !unc.companies) return;
+
+  const tile = (n, label) => n == null ? "" :
+    `<div class="cov"><b>${Number(n).toLocaleString()}</b><span>${label}</span></div>`;
+
+  document.getElementById("covgrid").innerHTML = [
+    tile(jobs.companies, "company websites checked"),
+    tile(jobs.pages_read, "job pages read"),
+    tile(jobs.rows_found, "listings found"),
+    tile(unc.reached, "houses checked for casting"),
+    tile(unc.pages_read, "production pages read"),
+    tile(unc.roles_found, "uncast roles found"),
+  ].join("");
+
+  const bits = [];
+  if (jobs.last_run) bits.push("job listings last scanned " + jobs.last_run);
+  if (unc.last_run) bits.push("cast lists " + unc.last_run);
+  if (unc.complete === false || jobs.complete === false)
+    bits.push("the last run stopped early, so these figures are partial");
+  document.getElementById("covnote").textContent = bits.join(" \u00b7 ");
+  document.getElementById("covsummary").textContent =
+    `How much was searched \u2014 ${Number(jobs.companies || 0).toLocaleString()}`
+    + ` company websites, ${Number(unc.pages_read || 0).toLocaleString()} production pages`;
+  document.getElementById("coverage").hidden = false;
+}
+
 function download(){
   if (TAB === "uncast") return downloadUncast();
   const chosen = PICKED.size ? view.filter(r => PICKED.has(r[10])) : view;
@@ -443,6 +495,7 @@ fetch("./data.json").then(r => r.json()).then(d => {
   OPTS.country = [...new Set(ROWS.map(r => r[3]))].filter(Boolean).sort();
   OPTS.kind = [...new Set(ROWS.map(r => r[0]))].filter(Boolean).sort();
   document.getElementById("n_open").textContent = ROWS.length;
+  showCoverage(d.stats || {});
   document.querySelector(".stats").innerHTML =
     `<div class="stat"><b>${ROWS.length}</b><span>openings listed</span></div>
      <div class="stat"><b>${ROWS.filter(r=>r[7]==="Upcoming").length}</b>
